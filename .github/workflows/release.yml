@@ -65,14 +65,19 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "XYZ Dashboard ${{ github.ref_name }}"
           releaseBody: |
-            Cross-platform build artifacts for ${{ github.ref_name }}.
+            **XYZ Dashboard ${{ github.ref_name }}** — floating macro-pad / launcher (Tauri 2 + React).
 
-            Official outputs:
+            ### Highlights (0.1.x)
+            - **Icon packs**: catalog in Settings → Icons (search, trending / downloads / newest, categories, install/update packs). Icons stored as `pack:<pack-id>:<icon-id>`; bundled under app resources for release builds.
+            - **Audio**: Howler-based SFX, global shortcut open/close sounds, Sounds tab (volume, output channel, test).
+            - **UX**: grid paging per page sizes, smoother window drag, settings panel fixes, icon auto-detect for executables with optional overwrite.
+
+            ### Artifacts (this workflow matrix)
             - Linux: `.AppImage`, `.deb`
             - macOS: `.dmg`
             - Windows: `.exe` (NSIS)
 
-            Generated in job: ${{ matrix.artifact_note }}
+            _Job: ${{ matrix.artifact_note }}_
           releaseDraft: false
           prerelease: false
           includeDebug: false

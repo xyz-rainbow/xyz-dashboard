@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../store';
 import type { ButtonConfig } from '../types';
-import { getLibraryIconComponent, isLibraryIcon } from '../iconLibrary';
-import { playTapSfx } from '../audio/sfx';
+import {
+  getLibraryIconComponent,
+  isLibraryIcon,
+  isPackIcon,
+} from '../iconLibrary';
+import { useResolvedPackIconSrc } from '../hooks/useResolvedPackIcon';
 
 interface Props {
   button: ButtonConfig;
@@ -15,8 +19,14 @@ export default function GridButton({ button, onHover }: Props) {
   const [imgError, setImgError] = useState(false);
   const hasCommand = button.command.trim().length > 0;
   const isLibIcon = isLibraryIcon(button.icon);
+  const isPack = isPackIcon(button.icon);
   const IconComponent = getLibraryIconComponent(button.icon);
-  const showFallback = !button.icon || (!isLibIcon && imgError) || (isLibIcon && !IconComponent);
+  const { src: packSrc } = useResolvedPackIconSrc(button.icon);
+  const showFallback =
+    !button.icon ||
+    (isLibIcon && !IconComponent) ||
+    (isPack && (!packSrc || imgError)) ||
+    (!isLibIcon && !isPack && imgError);
 
   // Reset imgError when icon path changes so it retries loading
   useEffect(() => {
@@ -24,10 +34,6 @@ export default function GridButton({ button, onHover }: Props) {
   }, [button.icon]);
 
   const handleClick = () => {
-    void playTapSfx().catch((error) => {
-      console.warn('Tap SFX failed:', error);
-    });
-
     if (hasCommand) {
       executeButton(button);
     } else {
@@ -65,6 +71,14 @@ export default function GridButton({ button, onHover }: Props) {
           )
         ) : isLibIcon && IconComponent ? (
           <IconComponent className="w-8 h-8 text-white/75" />
+        ) : isPack && packSrc ? (
+          <img
+            src={packSrc}
+            alt={button.label}
+            className="max-w-full max-h-full object-contain"
+            onError={() => setImgError(true)}
+            draggable={false}
+          />
         ) : (
           <img
             src={button.icon}

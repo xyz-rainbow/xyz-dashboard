@@ -1,0 +1,77 @@
+{
+  "id": "dev-tools",
+  "name": "Developer Tools",
+  "categories": ["development", "system"],
+  "icons": [
+    {
+      "id": "terminal",
+      "name": "Terminal",
+      "relativePath": "icons/terminal.svg",
+      "category": "development",
+      "tags": ["shell", "bash", "terminal"],
+      "appHints": ["kitty", "gnome-terminal", "alacritty"],
+      "createdAt": "2026-03-20T00:00:00Z",
+      "downloads": 340
+    },
+    {
+      "id": "code",
+      "name": "Code",
+      "relativePath": "icons/code.svg",
+      "category": "development",
+      "tags": ["ide", "editor", "coding"],
+      "appHints": ["code", "codium"],
+      "createdAt": "2026-03-20T00:00:00Z",
+      "downloads": 295
+    },
+    {
+      "id": "robot",
+      "name": "Automation Bot",
+      "relativePath": "icons/robot.svg",
+      "category": "system",
+      "tags": ["ai", "assistant", "bot"],
+      "appHints": ["ollama", "python"],
+      "createdAt": "2026-03-21T00:00:00Z",
+      "downloads": 202
+    },
+    {
+      "id": "gear",
+      "name": "Tools",
+      "relativePath": "icons/gear.svg",
+      "category": "system",
+      "tags": ["settings", "tools"],
+      "appHints": ["htop", "systemctl"],
+      "createdAt": "2026-03-22T00:00:00Z",
+      "downloads": 181
+    },
+    {
+      "id": "git-branch",
+      "name": "Git Branch",
+      "relativePath": "icons/git-branch.svg",
+      "category": "development",
+      "tags": ["git", "vcs", "branch"],
+      "appHints": ["gitk", "gitg", "git"],
+      "createdAt": "2026-03-23T00:00:00Z",
+      "downloads": 264
+    },
+    {
+      "id": "database",
+      "name": "Database",
+      "relativePath": "icons/database.svg",
+      "category": "development",
+      "tags": ["sql", "db", "data"],
+      "appHints": ["dbeaver", "pgadmin"],
+      "createdAt": "2026-03-24T00:00:00Z",
+      "downloads": 198
+    },
+    {
+      "id": "package",
+      "name": "Package",
+      "relativePath": "icons/package.svg",
+      "category": "development",
+      "tags": ["npm", "crate", "dependency"],
+      "appHints": ["cargo", "npm", "pnpm"],
+      "createdAt": "2026-03-25T00:00:00Z",
+      "downloads": 156
+    }
+  ]
+}

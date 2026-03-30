@@ -3,7 +3,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import type { AppConfig, ButtonConfig, Corner, GridSize } from './types';
 import { DEFAULT_CONFIG, GRID_SIZES } from './types';
-import { setSfxSettings } from './audio/sfx';
+import {
+  playErrorSfx,
+  playSuccessSfx,
+  playTapSfx,
+  setSfxOutputChannel,
+  setSfxSettings,
+} from './audio/sfx';
 
 const SAVE_DEBOUNCE_MS = 250;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -21,6 +27,36 @@ function normalizeButtons(
     if (i < buttons.length) return buttons[i];
     return { id: `btn-${i}`, label: '', icon: '', command: '' };
   });
+}
+
+function pageCapacity(size: GridSize): number {
+  return Math.max(1, size[0] * size[1]);
+}
+
+function pageStart(pageSizes: GridSize[], pageIndex: number): number {
+  let start = 0;
+  for (let i = 0; i < pageIndex; i += 1) {
+    start += pageCapacity(pageSizes[i]);
+  }
+  return start;
+}
+
+function normalizePageGridSizes(
+  pageGridSizes: GridSize[] | undefined,
+  legacyGridSize: GridSize,
+  buttonCount: number
+): GridSize[] {
+  const safe = (pageGridSizes && pageGridSizes.length > 0
+    ? pageGridSizes
+    : [legacyGridSize]
+  ).map(([r, c]) => [Math.max(1, r), Math.max(1, c)] as GridSize);
+  let capacity = safe.reduce((acc, s) => acc + pageCapacity(s), 0);
+  while (capacity < buttonCount) {
+    const fallback = safe[safe.length - 1] ?? legacyGridSize;
+    safe.push(fallback);
+    capacity += pageCapacity(fallback);
+  }
+  return safe;
 }
 
 function getShortcutSignature(config: AppConfig): string {
@@ -44,6 +80,27 @@ async function persistConfig(config: AppConfig): Promise<void> {
   } catch (error) {
     console.warn('Failed to persist app config:', error);
   }
+}
+
+function getConfigSnapshot(state: AppStore): AppConfig {
+  return {
+    gridSize: state.gridSize,
+    pageGridSizes: state.pageGridSizes,
+    buttons: state.buttons,
+    settingsIconCorner: state.settingsIconCorner,
+    shortcutKey: state.shortcutKey,
+    numpadShortcuts: state.numpadShortcuts,
+    soundEnabled: state.soundEnabled,
+    soundVolume: state.soundVolume,
+    soundOutputChannel: state.soundOutputChannel,
+    soundTestSound: state.soundTestSound,
+    inactivityTimeout: state.inactivityTimeout,
+    fadeOutDuration: state.fadeOutDuration,
+    recentCommands: state.recentCommands,
+    installedPacks: state.installedPacks,
+    lastIconPackSyncAt: state.lastIconPackSyncAt,
+    iconUsageStats: state.iconUsageStats,
+  };
 }
 
 function queueConfigSave(config: AppConfig): void {
@@ -77,6 +134,9 @@ interface AppStore extends AppConfig {
   setNumpadShortcuts: (enabled: boolean) => void;
   setSoundEnabled: (enabled: boolean) => void;
   setSoundVolume: (volume: number) => void;
+  setSoundOutputChannel: (channel: AppConfig['soundOutputChannel']) => void;
+  setSoundTestSound: (sound: AppConfig['soundTestSound']) => void;
+  previewSound: () => Promise<void>;
   setInactivityTimeout: (seconds: number) => void;
   setFadeOutDuration: (seconds: number) => void;
   addRecentCommand: (command: string) => void;
@@ -84,6 +144,7 @@ interface AppStore extends AppConfig {
   setSettingsOpen: (open: boolean) => void;
   setEditingButton: (id: string | null) => void;
   setError: (error: string | null) => void;
+  trackIconUsage: (iconKey: string, amount?: number) => void;
   setCurrentPage: (page: number) => void;
   nextPage: () => void;
   prevPage: () => void;
@@ -103,32 +164,56 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   setGridSize: (size) => {
     const previous = get();
-    const previousPageSize = previous.gridSize[0] * previous.gridSize[1];
-    const [rows, cols] = size;
-    const count = rows * cols;
-    const pages = Math.max(1, Math.ceil(previous.buttons.length / previousPageSize));
-    const targetCount = pages * count;
-    const current = previous.buttons;
-    const buttons = Array.from({ length: targetCount }, (_, i) => {
-      if (i < current.length) return current[i];
-      return { id: `btn-${i}`, label: '', icon: '', command: '' };
+    const sizes = [...previous.pageGridSizes];
+    const page = Math.min(previous.currentPage, sizes.length - 1);
+    const oldSize = sizes[page] ?? previous.gridSize;
+    const oldCap = pageCapacity(oldSize);
+    const nextCap = pageCapacity(size);
+    const start = pageStart(sizes, page);
+    const currentPageButtons = previous.buttons.slice(start, start + oldCap);
+    const nextPageButtons = Array.from({ length: nextCap }, (_, i) => {
+      if (i < currentPageButtons.length) return currentPageButtons[i];
+      return { id: `btn-${start + i}`, label: '', icon: '', command: '' };
     });
+    const buttons = [
+      ...previous.buttons.slice(0, start),
+      ...nextPageButtons,
+      ...previous.buttons.slice(start + oldCap),
+    ];
+    sizes[page] = size;
     set({
       gridSize: size,
+      pageGridSizes: sizes,
       buttons,
-      currentPage: Math.min(previous.currentPage, Math.max(0, pages - 1)),
+      currentPage: page,
     });
     get().saveConfig();
   },
 
   cycleGridSize: (direction) => {
-    const current = get().gridSize;
+    const { gridSize, currentPage, pageGridSizes } = get();
+    const current = gridSize;
     const idx = GRID_SIZES.findIndex(
       ([r, c]) => r === current[0] && c === current[1]
     );
     if (direction > 0 && idx === GRID_SIZES.length - 1) {
       get().addPage();
       return;
+    }
+    if (direction < 0 && idx === 0) {
+      if (currentPage > 0) {
+        const prevPage = currentPage - 1;
+        const maxGridSize = GRID_SIZES[GRID_SIZES.length - 1];
+        const prevSize = pageGridSizes[prevPage] ?? maxGridSize;
+        set({
+          currentPage: prevPage,
+          gridSize: prevSize,
+        });
+        if (prevSize[0] !== maxGridSize[0] || prevSize[1] !== maxGridSize[1]) {
+          get().setGridSize(maxGridSize);
+        }
+        return;
+      }
     }
     const next = Math.min(
       GRID_SIZES.length - 1,
@@ -152,8 +237,10 @@ export const useStore = create<AppStore>()((set, get) => ({
   },
 
   setShortcutKey: (key) => {
-    set({ shortcutKey: key });
-    get().saveConfig();
+    const normalized = key.trim().toUpperCase();
+    set({ shortcutKey: normalized || DEFAULT_CONFIG.shortcutKey });
+    const snapshot = getConfigSnapshot(get());
+    void persistConfig(snapshot);
   },
 
   setNumpadShortcuts: (enabled) => {
@@ -172,6 +259,30 @@ export const useStore = create<AppStore>()((set, get) => ({
     set({ soundVolume: clamped });
     setSfxSettings(get().soundEnabled, clamped);
     get().saveConfig();
+  },
+
+  setSoundOutputChannel: (channel) => {
+    set({ soundOutputChannel: channel });
+    setSfxOutputChannel(channel);
+    get().saveConfig();
+  },
+
+  setSoundTestSound: (sound) => {
+    set({ soundTestSound: sound });
+    get().saveConfig();
+  },
+
+  previewSound: async () => {
+    const sound = get().soundTestSound;
+    if (sound === 'success') {
+      await playSuccessSfx();
+      return;
+    }
+    if (sound === 'error') {
+      await playErrorSfx();
+      return;
+    }
+    await playTapSfx();
   },
 
   setInactivityTimeout: (seconds) => {
@@ -202,12 +313,23 @@ export const useStore = create<AppStore>()((set, get) => ({
   setSettingsOpen: (open) => set({ settingsOpen: open, editingButton: null }),
   setEditingButton: (id) => set({ editingButton: id }),
   setError: (error) => set({ error }),
+  trackIconUsage: (iconKey, amount = 1) => {
+    const key = iconKey.trim();
+    if (!key) return;
+    set((s) => ({
+      iconUsageStats: {
+        ...s.iconUsageStats,
+        [key]: (s.iconUsageStats[key] ?? 0) + Math.max(1, amount),
+      },
+    }));
+    get().saveConfig();
+  },
   setCurrentPage: (page) => {
-    const { gridSize, buttons } = get();
-    const pageSize = gridSize[0] * gridSize[1];
-    const totalPages = Math.max(1, Math.ceil(buttons.length / pageSize));
+    const { pageGridSizes } = get();
+    const totalPages = Math.max(1, pageGridSizes.length);
     const next = Math.min(totalPages - 1, Math.max(0, page));
-    set({ currentPage: next });
+    const size = pageGridSizes[next] ?? get().gridSize;
+    set({ currentPage: next, gridSize: size });
   },
   nextPage: () => {
     const { currentPage, setCurrentPage } = get();
@@ -218,21 +340,31 @@ export const useStore = create<AppStore>()((set, get) => ({
     setCurrentPage(currentPage - 1);
   },
   addPage: () => {
-    const { gridSize, buttons, currentPage } = get();
-    const pageSize = gridSize[0] * gridSize[1];
-    const currentPages = Math.max(1, Math.ceil(buttons.length / pageSize));
-    const targetCount = (currentPages + 1) * pageSize;
-    const nextButtons = Array.from({ length: targetCount }, (_, i) => {
-      if (i < buttons.length) return buttons[i];
-      return { id: `btn-${i}`, label: '', icon: '', command: '' };
+    const { pageGridSizes, buttons } = get();
+    const nextSize: GridSize = GRID_SIZES[0];
+    const nextCap = pageCapacity(nextSize);
+    const nextStart = buttons.length;
+    const nextButtons = [
+      ...buttons,
+      ...Array.from({ length: nextCap }, (_, i) => ({
+        id: `btn-${nextStart + i}`,
+        label: '',
+        icon: '',
+        command: '',
+      })),
+    ];
+    const nextPageGridSizes = [...pageGridSizes, nextSize];
+    set({
+      buttons: nextButtons,
+      pageGridSizes: nextPageGridSizes,
+      currentPage: nextPageGridSizes.length - 1,
+      gridSize: nextSize,
     });
-    const nextPage = currentPages;
-    set({ buttons: nextButtons, currentPage: Math.max(currentPage, nextPage) });
     get().saveConfig();
   },
 
   executeButton: async (button) => {
-    const { setError, addRecentCommand } = get();
+    const { setError, addRecentCommand, trackIconUsage } = get();
     const cmd = button.command.trim();
     if (!cmd) {
       setError('Empty command');
@@ -248,10 +380,12 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (isUrl) {
         await invoke('open_url', { url: cmd });
         addRecentCommand(cmd);
+        if (button.icon?.trim()) trackIconUsage(button.icon, 2);
       } else {
         const success = await invoke<boolean>('execute_command', { command: cmd });
         if (success) {
           addRecentCommand(cmd);
+          if (button.icon?.trim()) trackIconUsage(button.icon, 2);
         }
       }
     } catch (err) {
@@ -262,27 +396,44 @@ export const useStore = create<AppStore>()((set, get) => ({
   loadConfig: async () => {
     try {
       const config = await invoke<AppConfig>('load_config');
+      const normalizedPageGridSizes = normalizePageGridSizes(
+        config.pageGridSizes,
+        config.gridSize ?? DEFAULT_CONFIG.gridSize,
+        (config.buttons ?? DEFAULT_CONFIG.buttons).length
+      );
+      const totalCapacity = normalizedPageGridSizes.reduce(
+        (acc, size) => acc + pageCapacity(size),
+        0
+      );
       const resolvedConfig: AppConfig = {
-        gridSize: config.gridSize ?? DEFAULT_CONFIG.gridSize,
+        gridSize: normalizedPageGridSizes[0] ?? DEFAULT_CONFIG.gridSize,
+        pageGridSizes: normalizedPageGridSizes,
         buttons: normalizeButtons(
           config.buttons ?? DEFAULT_CONFIG.buttons,
-          (config.gridSize ?? DEFAULT_CONFIG.gridSize)[0] *
-            (config.gridSize ?? DEFAULT_CONFIG.gridSize)[1]
+          totalCapacity
         ),
         settingsIconCorner: config.settingsIconCorner ?? DEFAULT_CONFIG.settingsIconCorner,
         shortcutKey: config.shortcutKey ?? DEFAULT_CONFIG.shortcutKey,
         numpadShortcuts: config.numpadShortcuts ?? DEFAULT_CONFIG.numpadShortcuts,
         soundEnabled: config.soundEnabled ?? DEFAULT_CONFIG.soundEnabled,
         soundVolume: config.soundVolume ?? DEFAULT_CONFIG.soundVolume,
+        soundOutputChannel:
+          config.soundOutputChannel ?? DEFAULT_CONFIG.soundOutputChannel,
+        soundTestSound: config.soundTestSound ?? DEFAULT_CONFIG.soundTestSound,
         inactivityTimeout: config.inactivityTimeout ?? DEFAULT_CONFIG.inactivityTimeout,
         fadeOutDuration: config.fadeOutDuration ?? DEFAULT_CONFIG.fadeOutDuration,
         recentCommands: config.recentCommands ?? DEFAULT_CONFIG.recentCommands,
+        installedPacks: config.installedPacks ?? DEFAULT_CONFIG.installedPacks,
+        lastIconPackSyncAt:
+          config.lastIconPackSyncAt ?? DEFAULT_CONFIG.lastIconPackSyncAt,
+        iconUsageStats: config.iconUsageStats ?? DEFAULT_CONFIG.iconUsageStats,
       };
       set({
         ...resolvedConfig,
         currentPage: 0,
       });
       setSfxSettings(resolvedConfig.soundEnabled, resolvedConfig.soundVolume);
+      setSfxOutputChannel(resolvedConfig.soundOutputChannel);
       lastShortcutSignature = getShortcutSignature(resolvedConfig);
     } catch (error) {
       console.warn('Failed to load config, using defaults:', error);
@@ -291,18 +442,7 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   saveConfig: async () => {
     const s = get();
-    const config: AppConfig = {
-      gridSize: s.gridSize,
-      buttons: s.buttons,
-      settingsIconCorner: s.settingsIconCorner,
-      shortcutKey: s.shortcutKey,
-      numpadShortcuts: s.numpadShortcuts,
-      soundEnabled: s.soundEnabled,
-      soundVolume: s.soundVolume,
-      inactivityTimeout: s.inactivityTimeout,
-      fadeOutDuration: s.fadeOutDuration,
-      recentCommands: s.recentCommands,
-    };
+    const config: AppConfig = getConfigSnapshot(s);
     queueConfigSave(config);
   },
 
@@ -312,6 +452,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       buttons: DEFAULT_CONFIG.buttons.map((b) => ({ ...b })),
     });
     setSfxSettings(DEFAULT_CONFIG.soundEnabled, DEFAULT_CONFIG.soundVolume);
+    setSfxOutputChannel(DEFAULT_CONFIG.soundOutputChannel);
     get().saveConfig();
   },
 }));

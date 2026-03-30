@@ -1,0 +1,77 @@
+{
+  "id": "media-social",
+  "name": "Media and Social",
+  "categories": ["media", "social"],
+  "icons": [
+    {
+      "id": "music",
+      "name": "Music",
+      "relativePath": "icons/music.svg",
+      "category": "media",
+      "tags": ["audio", "music", "player"],
+      "appHints": ["spotify", "rhythmbox", "vlc"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 204
+    },
+    {
+      "id": "camera",
+      "name": "Camera",
+      "relativePath": "icons/camera.svg",
+      "category": "media",
+      "tags": ["photo", "camera", "capture"],
+      "appHints": ["cheese", "obs"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 165
+    },
+    {
+      "id": "message-circle",
+      "name": "Messages",
+      "relativePath": "icons/message-circle.svg",
+      "category": "social",
+      "tags": ["chat", "message", "social"],
+      "appHints": ["telegram", "discord", "signal"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 153
+    },
+    {
+      "id": "share-2",
+      "name": "Share",
+      "relativePath": "icons/share-2.svg",
+      "category": "social",
+      "tags": ["share", "send", "social"],
+      "appHints": ["browser", "telegram-desktop"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 98
+    },
+    {
+      "id": "mic",
+      "name": "Microphone",
+      "relativePath": "icons/mic.svg",
+      "category": "media",
+      "tags": ["audio", "voice", "record"],
+      "appHints": ["audacity", "obs"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 176
+    },
+    {
+      "id": "headphones",
+      "name": "Headphones",
+      "relativePath": "icons/headphones.svg",
+      "category": "media",
+      "tags": ["audio", "listen", "music"],
+      "appHints": ["spotify", "clementine"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 142
+    },
+    {
+      "id": "image",
+      "name": "Gallery",
+      "relativePath": "icons/image.svg",
+      "category": "media",
+      "tags": ["photo", "picture", "viewer"],
+      "appHints": ["eog", "gthumb", "feh"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 124
+    }
+  ]
+}

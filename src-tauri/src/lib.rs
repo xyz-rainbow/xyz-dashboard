@@ -1,11 +1,15 @@
 use std::{
+    fs,
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
 };
+use serde::{Deserialize, Serialize};
 use tauri::{
     menu::{MenuBuilder, MenuItem},
+    path::BaseDirectory,
     tray::TrayIconBuilder,
-    Listener, Manager,
+    Emitter, Listener, Manager,
 };
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use tauri_plugin_opener::OpenerExt;
@@ -25,6 +29,99 @@ const ALLOWED_PROGRAMS: &[&str] = &[
     "xdg-open",
     "code",
 ];
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct IconPackIndex {
+    version: u32,
+    #[serde(rename = "updatedAt")]
+    updated_at: String,
+    packs: Vec<IconPackIndexEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct IconPackIndexEntry {
+    id: String,
+    name: String,
+    description: String,
+    categories: Vec<String>,
+    tags: Vec<String>,
+    #[serde(rename = "createdAt")]
+    created_at: String,
+    downloads: u64,
+    #[serde(rename = "trendingScore")]
+    trending_score: u64,
+    #[serde(rename = "iconCount")]
+    icon_count: usize,
+    #[serde(rename = "coverIcon")]
+    cover_icon: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct IconPackFile {
+    id: String,
+    name: String,
+    categories: Vec<String>,
+    icons: Vec<IconPackIcon>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct IconPackIcon {
+    id: String,
+    name: String,
+    #[serde(rename = "relativePath")]
+    relative_path: String,
+    category: String,
+    tags: Vec<String>,
+    #[serde(rename = "appHints")]
+    app_hints: Vec<String>,
+    #[serde(rename = "createdAt")]
+    created_at: String,
+    downloads: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct IconPackIconWithPath {
+    id: String,
+    name: String,
+    category: String,
+    tags: Vec<String>,
+    #[serde(rename = "appHints")]
+    app_hints: Vec<String>,
+    #[serde(rename = "createdAt")]
+    created_at: String,
+    downloads: u64,
+    #[serde(rename = "iconPath")]
+    icon_path: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct IconPackCatalogEntry {
+    id: String,
+    name: String,
+    description: String,
+    categories: Vec<String>,
+    tags: Vec<String>,
+    #[serde(rename = "createdAt")]
+    created_at: String,
+    downloads: u64,
+    #[serde(rename = "trendingScore")]
+    trending_score: u64,
+    #[serde(rename = "iconCount")]
+    icon_count: usize,
+    #[serde(rename = "coverIconPath")]
+    cover_icon_path: String,
+    installed: bool,
+    icons: Vec<IconPackIconWithPath>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct IconPackStatus {
+    #[serde(rename = "packId")]
+    pack_id: String,
+    installed: bool,
+    #[serde(rename = "installedAt")]
+    installed_at: Option<String>,
+}
 
 // ── Tauri Commands ─────────────────────────────────────────────────────────
 
@@ -105,6 +202,158 @@ fn detect_python_interpreter(script_path: &Path) -> String {
     "python3".to_string()
 }
 
+fn search_icon_path(icon_ref: &str) -> Option<String> {
+    if icon_ref.trim().is_empty() {
+        return None;
+    }
+    let icon_path = PathBuf::from(icon_ref);
+    if icon_path.is_absolute() && icon_path.exists() {
+        return Some(icon_path.to_string_lossy().to_string());
+    }
+
+    let candidates = if icon_ref.contains('/') {
+        vec![PathBuf::from(icon_ref)]
+    } else {
+        let mut paths = Vec::new();
+        let exts = ["png", "svg", "xpm"];
+        let bases = [
+            "/usr/share/icons/hicolor",
+            "/usr/share/icons",
+            "/usr/share/pixmaps",
+            "/usr/local/share/icons",
+        ];
+        let sizes = ["512x512", "256x256", "128x128", "64x64", "48x48", "32x32"];
+        for base in bases {
+            for size in sizes {
+                for ext in exts {
+                    paths.push(PathBuf::from(format!(
+                        "{}/{}/apps/{}.{}",
+                        base, size, icon_ref, ext
+                    )));
+                }
+            }
+            for ext in exts {
+                paths.push(PathBuf::from(format!("{}/{}.{}", base, icon_ref, ext)));
+                paths.push(PathBuf::from(format!("{}/apps/{}.{}", base, icon_ref, ext)));
+            }
+        }
+        paths
+    };
+
+    candidates
+        .into_iter()
+        .find(|p| p.exists())
+        .map(|p| p.to_string_lossy().to_string())
+}
+
+fn parse_desktop_entry_for_icon(desktop_file: &Path) -> Option<String> {
+    let file = fs::File::open(desktop_file).ok()?;
+    let reader = BufReader::new(file);
+    for line in reader.lines().map_while(Result::ok) {
+        if let Some(value) = line.strip_prefix("Icon=") {
+            if let Some(path) = search_icon_path(value.trim()) {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+fn find_icon_by_exec(exec_name: &str) -> Option<String> {
+    let mut desktop_dirs = vec![PathBuf::from("/usr/share/applications")];
+    if let Ok(home) = std::env::var("HOME") {
+        desktop_dirs.push(PathBuf::from(home).join(".local/share/applications"));
+    }
+
+    for dir in desktop_dirs {
+        let entries = match fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) != Some("desktop") {
+                continue;
+            }
+            let file = match fs::File::open(&path) {
+                Ok(f) => f,
+                Err(_) => continue,
+            };
+            let reader = BufReader::new(file);
+            let mut has_exec = false;
+            let mut icon_ref: Option<String> = None;
+            for line in reader.lines().map_while(Result::ok) {
+                if let Some(exec) = line.strip_prefix("Exec=") {
+                    if exec.contains(exec_name) {
+                        has_exec = true;
+                    }
+                } else if let Some(icon) = line.strip_prefix("Icon=") {
+                    icon_ref = Some(icon.trim().to_string());
+                }
+            }
+            if has_exec {
+                if let Some(icon) = icon_ref {
+                    if let Some(path) = search_icon_path(&icon) {
+                        return Some(path);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<(), String> {
+    if !source.exists() {
+        return Err(format!("Source path not found: {}", source.display()));
+    }
+    fs::create_dir_all(destination).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(source).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        let dest_path = destination.join(entry.file_name());
+        if path.is_dir() {
+            copy_dir_recursive(&path, &dest_path)?;
+        } else {
+            fs::copy(&path, &dest_path).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Packaged apps resolve bundled `assets/icon-packs` via [`BaseDirectory::Resource`].
+/// In `tauri dev`, fall back to the repo `assets/icon-packs` when resources are absent.
+fn icon_packs_source_root(app: &tauri::AppHandle) -> PathBuf {
+    if let Ok(p) = app.path().resolve("icon-packs", BaseDirectory::Resource) {
+        if p.join("index.json").exists() {
+            return p;
+        }
+    }
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("assets")
+        .join("icon-packs")
+}
+
+fn icon_packs_install_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("icon-packs");
+    fs::create_dir_all(&base).map_err(|e| e.to_string())?;
+    Ok(base)
+}
+
+fn installed_packs_map<R: tauri::Runtime>(
+    store: &tauri_plugin_store::Store<R>,
+) -> serde_json::Map<String, serde_json::Value> {
+    store
+        .get("installedPacks")
+        .and_then(|v: serde_json::Value| v.as_object().cloned())
+        .unwrap_or_default()
+}
+
 #[tauri::command]
 fn suggest_command_for_path(path: String) -> Result<String, String> {
     if path.trim().is_empty() {
@@ -124,6 +373,212 @@ fn suggest_command_for_path(path: String) -> Result<String, String> {
         return Ok(format!("node {}", quote_arg(&path)));
     }
     Ok(quote_arg(&path))
+}
+
+#[tauri::command]
+fn suggest_icon_for_path(path: String) -> Result<Option<String>, String> {
+    if path.trim().is_empty() {
+        return Ok(None);
+    }
+    let file_path = PathBuf::from(&path);
+    if !file_path.exists() {
+        return Ok(None);
+    }
+
+    let lower = path.to_lowercase();
+    if lower.ends_with(".png")
+        || lower.ends_with(".jpg")
+        || lower.ends_with(".jpeg")
+        || lower.ends_with(".svg")
+        || lower.ends_with(".webp")
+        || lower.ends_with(".ico")
+    {
+        return Ok(Some(path));
+    }
+
+    if lower.ends_with(".desktop") {
+        return Ok(parse_desktop_entry_for_icon(&file_path));
+    }
+
+    if let Some(exec_name) = file_path.file_name().and_then(|s| s.to_str()) {
+        if let Some(icon) = find_icon_by_exec(exec_name) {
+            return Ok(Some(icon));
+        }
+    }
+
+    Ok(None)
+}
+
+#[tauri::command]
+async fn list_icon_packs(app: tauri::AppHandle) -> Result<Vec<IconPackCatalogEntry>, String> {
+    let source_root = icon_packs_source_root(&app);
+    let index_path = source_root.join("index.json");
+    let index_file = fs::File::open(index_path).map_err(|e| e.to_string())?;
+    let index: IconPackIndex = serde_json::from_reader(index_file).map_err(|e| e.to_string())?;
+
+    let store = app.store("config.json").map_err(|e| e.to_string())?;
+    let installed_map = installed_packs_map(&store);
+    let install_root = icon_packs_install_root(&app)?;
+
+    let mut packs_out = Vec::new();
+    for pack in index.packs {
+        let pack_file_path = source_root
+            .join("packs")
+            .join(&pack.id)
+            .join("pack.json");
+        let pack_file = fs::File::open(pack_file_path).map_err(|e| e.to_string())?;
+        let pack_content: IconPackFile =
+            serde_json::from_reader(pack_file).map_err(|e| e.to_string())?;
+        let installed = installed_map.contains_key(&pack.id);
+        let icon_base = if installed {
+            install_root.join("packs").join(&pack.id)
+        } else {
+            source_root.join("packs").join(&pack.id)
+        };
+
+        let icons = pack_content
+            .icons
+            .into_iter()
+            .map(|icon| IconPackIconWithPath {
+                id: icon.id,
+                name: icon.name,
+                category: icon.category,
+                tags: icon.tags,
+                app_hints: icon.app_hints,
+                created_at: icon.created_at,
+                downloads: icon.downloads,
+                icon_path: icon_base
+                    .join(icon.relative_path)
+                    .to_string_lossy()
+                    .to_string(),
+            })
+            .collect::<Vec<_>>();
+
+        let cover_icon_path = icon_base.join(pack.cover_icon).to_string_lossy().to_string();
+        packs_out.push(IconPackCatalogEntry {
+            id: pack.id,
+            name: pack.name,
+            description: pack.description,
+            categories: pack.categories,
+            tags: pack.tags,
+            created_at: pack.created_at,
+            downloads: pack.downloads,
+            trending_score: pack.trending_score,
+            icon_count: icons.len(),
+            cover_icon_path,
+            installed,
+            icons,
+        });
+    }
+
+    Ok(packs_out)
+}
+
+#[tauri::command]
+fn resolve_pack_icon_path(
+    app: tauri::AppHandle,
+    pack_id: String,
+    icon_id: String,
+) -> Result<String, String> {
+    let pack_id = pack_id.trim().to_string();
+    let icon_id = icon_id.trim().to_string();
+    if pack_id.is_empty() || icon_id.is_empty() {
+        return Err("pack_id and icon_id are required".to_string());
+    }
+
+    let source_root = icon_packs_source_root(&app);
+    let pack_json = source_root
+        .join("packs")
+        .join(&pack_id)
+        .join("pack.json");
+    let pack_file = fs::File::open(&pack_json)
+        .map_err(|e| format!("Pack not found ({}): {}", pack_id, e))?;
+    let pack_content: IconPackFile =
+        serde_json::from_reader(pack_file).map_err(|e| e.to_string())?;
+
+    let icon = pack_content
+        .icons
+        .iter()
+        .find(|i| i.id == icon_id)
+        .ok_or_else(|| format!("Icon '{}' not in pack '{}'", icon_id, pack_id))?;
+
+    let store = app.store("config.json").map_err(|e| e.to_string())?;
+    let installed = installed_packs_map(&store).contains_key(&pack_id);
+    let install_root = icon_packs_install_root(&app)?;
+    let icon_base = if installed {
+        install_root.join("packs").join(&pack_id)
+    } else {
+        source_root.join("packs").join(&pack_id)
+    };
+
+    let full = icon_base.join(&icon.relative_path);
+    if !full.exists() {
+        return Err(format!("Icon file not found: {}", full.display()));
+    }
+    Ok(full.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+async fn install_icon_pack(app: tauri::AppHandle, pack_id: String) -> Result<bool, String> {
+    if pack_id.trim().is_empty() {
+        return Err("pack_id is required".to_string());
+    }
+    let source_pack_dir = icon_packs_source_root(&app)
+        .join("packs")
+        .join(&pack_id);
+    if !source_pack_dir.exists() {
+        return Err(format!("Icon pack not found: {}", pack_id));
+    }
+
+    let install_root = icon_packs_install_root(&app)?;
+    let install_pack_dir = install_root.join("packs").join(&pack_id);
+    if install_pack_dir.exists() {
+        fs::remove_dir_all(&install_pack_dir).map_err(|e| e.to_string())?;
+    }
+    copy_dir_recursive(&source_pack_dir, &install_pack_dir)?;
+
+    let store = app.store("config.json").map_err(|e| e.to_string())?;
+    let mut installed = installed_packs_map(&store);
+    let installed_at = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_secs()
+    );
+    installed.insert(pack_id, serde_json::json!({ "installedAt": installed_at }));
+    store.set("installedPacks", serde_json::Value::Object(installed));
+    store.set(
+        "lastIconPackSyncAt",
+        serde_json::json!(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|e| e.to_string())?
+                .as_secs()
+        ),
+    );
+    store.save().map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+#[tauri::command]
+async fn get_icon_pack_status(app: tauri::AppHandle, pack_id: String) -> Result<IconPackStatus, String> {
+    if pack_id.trim().is_empty() {
+        return Err("pack_id is required".to_string());
+    }
+    let store = app.store("config.json").map_err(|e| e.to_string())?;
+    let installed = installed_packs_map(&store);
+    let installed_at = installed
+        .get(&pack_id)
+        .and_then(|v| v.get("installedAt"))
+        .and_then(|v| v.as_str())
+        .map(String::from);
+
+    Ok(IconPackStatus {
+        pack_id,
+        installed: installed_at.is_some(),
+        installed_at,
+    })
 }
 
 #[tauri::command]
@@ -168,7 +623,9 @@ async fn open_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
 #[tauri::command]
 fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
-        window.hide().map_err(|e| e.to_string())
+        window.hide().map_err(|e| e.to_string())?;
+        let _ = app.emit("dashboard-visibility-changed", serde_json::json!({ "visible": false }));
+        Ok(())
     } else {
         Ok(())
     }
@@ -178,7 +635,9 @@ fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
 fn show_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
         window.show().map_err(|e| e.to_string())?;
-        window.set_focus().map_err(|e| e.to_string())
+        window.set_focus().map_err(|e| e.to_string())?;
+        let _ = app.emit("dashboard-visibility-changed", serde_json::json!({ "visible": true }));
+        Ok(())
     } else {
         Ok(())
     }
@@ -201,9 +660,14 @@ async fn load_config(app: tauri::AppHandle) -> Result<serde_json::Value, String>
         "numpadShortcuts": store.get("numpadShortcuts").unwrap_or(serde_json::json!(true)),
         "soundEnabled": store.get("soundEnabled").unwrap_or(serde_json::json!(true)),
         "soundVolume": store.get("soundVolume").unwrap_or(serde_json::json!(65)),
+        "soundOutputChannel": store.get("soundOutputChannel").unwrap_or(serde_json::json!("stereo")),
+        "soundTestSound": store.get("soundTestSound").unwrap_or(serde_json::json!("tap")),
         "inactivityTimeout": store.get("inactivityTimeout").unwrap_or(serde_json::json!(30)),
         "fadeOutDuration": store.get("fadeOutDuration").unwrap_or(serde_json::json!(4)),
         "recentCommands": store.get("recentCommands").unwrap_or(serde_json::json!([])),
+        "installedPacks": store.get("installedPacks").unwrap_or(serde_json::json!({})),
+        "lastIconPackSyncAt": store.get("lastIconPackSyncAt").unwrap_or(serde_json::json!("")),
+        "iconUsageStats": store.get("iconUsageStats").unwrap_or(serde_json::json!({})),
     });
 
     Ok(config)
@@ -229,30 +693,37 @@ fn toggle_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
+            let _ = app.emit("dashboard-visibility-changed", serde_json::json!({ "visible": false }));
         } else {
             let _ = window.show();
             let _ = window.set_focus();
+            let _ = app.emit("dashboard-visibility-changed", serde_json::json!({ "visible": true }));
         }
     }
 }
 
 fn key_to_code(key: &str) -> tauri_plugin_global_shortcut::Code {
     use tauri_plugin_global_shortcut::Code;
-    match key {
-        "Space" => Code::Space,
-        "A" | "a" => Code::KeyA, "B" | "b" => Code::KeyB,
-        "C" | "c" => Code::KeyC, "D" | "d" => Code::KeyD,
-        "E" | "e" => Code::KeyE, "F" | "f" => Code::KeyF,
-        "G" | "g" => Code::KeyG, "H" | "h" => Code::KeyH,
-        "I" | "i" => Code::KeyI, "J" | "j" => Code::KeyJ,
-        "K" | "k" => Code::KeyK, "L" | "l" => Code::KeyL,
-        "M" | "m" => Code::KeyM, "N" | "n" => Code::KeyN,
-        "O" | "o" => Code::KeyO, "P" | "p" => Code::KeyP,
-        "Q" | "q" => Code::KeyQ, "R" | "r" => Code::KeyR,
-        "S" | "s" => Code::KeyS, "T" | "t" => Code::KeyT,
-        "U" | "u" => Code::KeyU, "V" | "v" => Code::KeyV,
-        "W" | "w" => Code::KeyW, "X" | "x" => Code::KeyX,
-        "Y" | "y" => Code::KeyY, "Z" | "z" => Code::KeyZ,
+    let normalized = key.trim().to_uppercase();
+    match normalized.as_str() {
+        "SPACE" => Code::Space,
+        "A" => Code::KeyA, "B" => Code::KeyB,
+        "C" => Code::KeyC, "D" => Code::KeyD,
+        "E" => Code::KeyE, "F" => Code::KeyF,
+        "G" => Code::KeyG, "H" => Code::KeyH,
+        "I" => Code::KeyI, "J" => Code::KeyJ,
+        "K" => Code::KeyK, "L" => Code::KeyL,
+        "M" => Code::KeyM, "N" => Code::KeyN,
+        "O" => Code::KeyO, "P" => Code::KeyP,
+        "Q" => Code::KeyQ, "R" => Code::KeyR,
+        "S" => Code::KeyS, "T" => Code::KeyT,
+        "U" => Code::KeyU, "V" => Code::KeyV,
+        "W" => Code::KeyW, "X" => Code::KeyX,
+        "Y" => Code::KeyY, "Z" => Code::KeyZ,
+        "0" => Code::Digit0, "1" => Code::Digit1, "2" => Code::Digit2,
+        "3" => Code::Digit3, "4" => Code::Digit4, "5" => Code::Digit5,
+        "6" => Code::Digit6, "7" => Code::Digit7, "8" => Code::Digit8,
+        "9" => Code::Digit9,
         "F1" => Code::F1, "F2" => Code::F2, "F3" => Code::F3,
         "F4" => Code::F4, "F5" => Code::F5, "F6" => Code::F6,
         "F7" => Code::F7, "F8" => Code::F8, "F9" => Code::F9,
@@ -264,15 +735,22 @@ fn key_to_code(key: &str) -> tauri_plugin_global_shortcut::Code {
 fn register_main_shortcut(app: &tauri::AppHandle, key: &str) {
     use tauri_plugin_global_shortcut::{Modifiers, Shortcut, ShortcutState};
 
-    let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), key_to_code(key));
+    let normalized = key.trim();
+    let safe_key = if normalized.is_empty() { "P" } else { normalized };
     let app_handle = app.clone();
+    let code = key_to_code(safe_key);
+    let primary = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), code);
+    let fallback = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), code);
 
-    if let Err(e) = app.global_shortcut().on_shortcuts([shortcut], move |_app, _shortcut, event| {
-        if event.state() == ShortcutState::Pressed {
-            toggle_window(&app_handle);
-        }
-    }) {
-        eprintln!("Failed to register main shortcut: {}", e);
+    if let Err(e) = app
+        .global_shortcut()
+        .on_shortcuts([primary, fallback], move |_app, _shortcut, event| {
+            if event.state() == ShortcutState::Pressed {
+                toggle_window(&app_handle);
+            }
+        })
+    {
+        eprintln!("Failed to register main shortcuts: {}", e);
     }
 }
 
@@ -485,6 +963,11 @@ pub fn run() {
             show_window,
             is_processing,
             suggest_command_for_path,
+            suggest_icon_for_path,
+            list_icon_packs,
+            install_icon_pack,
+            get_icon_pack_status,
+            resolve_pack_icon_path,
             load_config,
             save_config,
         ])

@@ -56,6 +56,7 @@ Floating macro-pad launcher built with **Tauri + React + TypeScript** to run com
 - Mantiene historial de acciones para repetir tareas rapido.
 - Soporta iconos SVG de libreria o personalizados.
 - Incluye selector de scripts/ejecutables y sugerencias automaticas.
+- Incluye catalogo de icon packs por categorias con busqueda y filtros (trending, mas descargados, nuevos).
 
 **EN**
 
@@ -65,6 +66,7 @@ Floating macro-pad launcher built with **Tauri + React + TypeScript** to run com
 - Keep command history for fast repetition.
 - Support built-in and custom SVG icons.
 - Provide script/executable picker with automatic suggestions.
+- Include an icon pack catalog by category with search and sort filters.
 
 ## Seguridad / Security
 
@@ -187,6 +189,50 @@ Ejemplos actuales:
 - `assets/banner-features.svg`
 - `assets/error.svg`
 - `assets/settings.svg`
+
+## Icon packs (catalogo)
+
+El sistema de iconos descargables vive en `assets/icon-packs/` y se organiza asi:
+
+```text
+assets/icon-packs/
+  index.json
+  packs/
+    <pack-id>/
+      pack.json
+      icons/
+        *.svg|*.png
+```
+
+### Archivos y campos
+
+- `index.json`: indice global de packs y metricas para filtros.
+  - `packs[].id`, `name`, `description`
+  - `packs[].categories`, `tags`
+  - `packs[].downloads`, `trendingScore`, `createdAt`
+  - `packs[].coverIcon`, `iconCount`
+- `pack.json`: detalle de un pack.
+  - `icons[].id`, `name`, `category`
+  - `icons[].relativePath`
+  - `icons[].tags`, `appHints`
+  - `icons[].downloads`, `createdAt`
+
+### Como agregar un nuevo pack
+
+1. Crear carpeta `assets/icon-packs/packs/<nuevo-pack>/`.
+2. Agregar `pack.json` con metadata e iconos.
+3. Guardar SVG/PNG en `assets/icon-packs/packs/<nuevo-pack>/icons/`.
+4. Registrar el pack en `assets/icon-packs/index.json`.
+5. Ajustar metricas (`downloads`, `trendingScore`) segun release.
+
+### Como se usa en la app
+
+- En **Settings -> Icons** puedes:
+  - Buscar iconos por texto/tags/app hints.
+  - Ordenar por `Trending`, `Most downloaded` o `Newest`.
+  - Expandir categorias (acordeon) y aplicar iconos a un boton objetivo.
+  - Instalar/actualizar packs (estado persistido en config local).
+- Los iconos del catalogo se guardan en config como `pack:<pack-id>:<icon-id>`; la app resuelve la ruta del archivo al mostrarlos. Las rutas absolutas y los `lib:<id>` siguen igual.
 
 ## Docs extra
 

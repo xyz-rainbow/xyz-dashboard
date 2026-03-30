@@ -1,0 +1,77 @@
+{
+  "id": "apps-brands",
+  "name": "Apps and Brands",
+  "categories": ["apps", "web"],
+  "icons": [
+    {
+      "id": "browser",
+      "name": "Browser",
+      "relativePath": "icons/browser.svg",
+      "category": "web",
+      "tags": ["internet", "web", "search"],
+      "appHints": ["firefox", "chrome", "brave"],
+      "createdAt": "2026-03-27T00:00:00Z",
+      "downloads": 276
+    },
+    {
+      "id": "chat",
+      "name": "Chat",
+      "relativePath": "icons/chat.svg",
+      "category": "apps",
+      "tags": ["message", "team", "discord"],
+      "appHints": ["slack", "discord", "telegram"],
+      "createdAt": "2026-03-27T00:00:00Z",
+      "downloads": 241
+    },
+    {
+      "id": "video",
+      "name": "Video",
+      "relativePath": "icons/video.svg",
+      "category": "apps",
+      "tags": ["media", "stream", "record"],
+      "appHints": ["obs", "vlc"],
+      "createdAt": "2026-03-28T00:00:00Z",
+      "downloads": 210
+    },
+    {
+      "id": "palette",
+      "name": "Design",
+      "relativePath": "icons/palette.svg",
+      "category": "apps",
+      "tags": ["design", "art", "ui"],
+      "appHints": ["figma", "gimp", "inkscape"],
+      "createdAt": "2026-03-29T00:00:00Z",
+      "downloads": 191
+    },
+    {
+      "id": "mail",
+      "name": "Mail",
+      "relativePath": "icons/mail.svg",
+      "category": "apps",
+      "tags": ["email", "inbox", "imap"],
+      "appHints": ["thunderbird", "geary", "evolution"],
+      "createdAt": "2026-03-29T00:00:00Z",
+      "downloads": 268
+    },
+    {
+      "id": "calendar",
+      "name": "Calendar",
+      "relativePath": "icons/calendar.svg",
+      "category": "apps",
+      "tags": ["schedule", "agenda", "events"],
+      "appHints": ["gnome-calendar", "kalendar"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 219
+    },
+    {
+      "id": "gamepad",
+      "name": "Games",
+      "relativePath": "icons/gamepad.svg",
+      "category": "apps",
+      "tags": ["gaming", "steam", "controller"],
+      "appHints": ["steam", "lutris"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 312
+    }
+  ]
+}

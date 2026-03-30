@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 export function useInactivityTimer() {
   const inactivityTimeout = useStore((s) => s.inactivityTimeout);
   const fadeOutDuration = useStore((s) => s.fadeOutDuration);
+  const settingsOpen = useStore((s) => s.settingsOpen);
   const fadeOpacityRef = useRef(1);
   const animFrameRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -51,11 +52,12 @@ export function useInactivityTimer() {
   const resetTimer = useCallback(() => {
     cancelFade();
     fadeOpacityRef.current = 1;
+    if (settingsOpen) return;
 
     timerRef.current = setTimeout(() => {
       startFadeOut();
     }, inactivityTimeout * 1000);
-  }, [inactivityTimeout, cancelFade, startFadeOut]);
+  }, [inactivityTimeout, settingsOpen, cancelFade, startFadeOut]);
 
   useEffect(() => {
     resetTimer();
@@ -66,6 +68,7 @@ export function useInactivityTimer() {
 
     window.addEventListener('mousemove', onActivity);
     window.addEventListener('mouseenter', onActivity);
+    window.addEventListener('pointerdown', onActivity);
     window.addEventListener('click', onActivity);
     window.addEventListener('keydown', onActivity);
 
@@ -74,10 +77,11 @@ export function useInactivityTimer() {
       clearTimeout(timerRef.current);
       window.removeEventListener('mousemove', onActivity);
       window.removeEventListener('mouseenter', onActivity);
+      window.removeEventListener('pointerdown', onActivity);
       window.removeEventListener('click', onActivity);
       window.removeEventListener('keydown', onActivity);
     };
   }, [resetTimer, cancelFade]);
 
-  return fadeOpacityRef;
+  return { fadeOpacityRef, resetInactivity: resetTimer };
 }

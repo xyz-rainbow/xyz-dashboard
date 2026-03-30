@@ -4,10 +4,10 @@ import { useStore } from '../store';
 import { playSuccessSfx } from '../audio/sfx';
 
 export default function GridControls() {
-  const { gridSize, buttons, currentPage, cycleGridSize, prevPage, nextPage, setError } = useStore();
+  const { gridSize, pageGridSizes, currentPage, cycleGridSize, prevPage, nextPage, setError } =
+    useStore();
   const [rows, cols] = gridSize;
-  const pageSize = rows * cols;
-  const totalPages = Math.max(1, Math.ceil(buttons.length / pageSize));
+  const totalPages = Math.max(1, pageGridSizes.length);
   const page = Math.min(currentPage + 1, totalPages);
   const previousPagesRef = useRef(totalPages);
 

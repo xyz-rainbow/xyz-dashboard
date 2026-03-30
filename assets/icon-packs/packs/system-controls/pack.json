@@ -1,0 +1,77 @@
+{
+  "id": "system-controls",
+  "name": "System Controls",
+  "categories": ["system", "utilities"],
+  "icons": [
+    {
+      "id": "power",
+      "name": "Power",
+      "relativePath": "icons/power.svg",
+      "category": "system",
+      "tags": ["shutdown", "restart", "energy"],
+      "appHints": ["systemctl", "poweroff"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 170
+    },
+    {
+      "id": "sliders",
+      "name": "Controls",
+      "relativePath": "icons/sliders.svg",
+      "category": "utilities",
+      "tags": ["settings", "controls", "config"],
+      "appHints": ["pavucontrol", "gnome-control-center"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 148
+    },
+    {
+      "id": "wifi",
+      "name": "Network",
+      "relativePath": "icons/wifi.svg",
+      "category": "system",
+      "tags": ["wifi", "network", "internet"],
+      "appHints": ["nm-connection-editor"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 122
+    },
+    {
+      "id": "folder-open",
+      "name": "File Manager",
+      "relativePath": "icons/folder-open.svg",
+      "category": "utilities",
+      "tags": ["files", "folder", "manager"],
+      "appHints": ["nautilus", "thunar", "dolphin"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 72
+    },
+    {
+      "id": "volume",
+      "name": "Volume",
+      "relativePath": "icons/volume.svg",
+      "category": "utilities",
+      "tags": ["audio", "sound", "speaker"],
+      "appHints": ["pavucontrol", "alsamixergui"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 188
+    },
+    {
+      "id": "lock",
+      "name": "Lock Screen",
+      "relativePath": "icons/lock.svg",
+      "category": "system",
+      "tags": ["security", "session", "screensaver"],
+      "appHints": ["gnome-screensaver", "xflock4"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 134
+    },
+    {
+      "id": "monitor",
+      "name": "Display",
+      "relativePath": "icons/monitor.svg",
+      "category": "system",
+      "tags": ["screen", "display", "resolution"],
+      "appHints": ["arandr", "gnome-display-panel"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 96
+    }
+  ]
+}

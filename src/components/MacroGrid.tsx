@@ -4,12 +4,15 @@ import { useStore } from '../store';
 import GridButton from './GridButton';
 
 export default function MacroGrid() {
-  const { gridSize, buttons, currentPage, nextPage, prevPage, setError } = useStore();
+  const { gridSize, pageGridSizes, buttons, currentPage, nextPage, prevPage, setError } =
+    useStore();
   const [rows, cols] = gridSize;
-  const pageSize = rows * cols;
-  const totalPages = Math.max(1, Math.ceil(buttons.length / pageSize));
+  const totalPages = Math.max(1, pageGridSizes.length);
   const clampedPage = Math.min(currentPage, totalPages - 1);
-  const start = clampedPage * pageSize;
+  const start = pageGridSizes
+    .slice(0, clampedPage)
+    .reduce((acc, [r, c]) => acc + r * c, 0);
+  const pageSize = rows * cols;
   const pageButtons = buttons.slice(start, start + pageSize);
 
   const handleWheel = useCallback(

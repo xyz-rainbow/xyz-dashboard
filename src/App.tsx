@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { useStore } from './store';
 import { useInactivityTimer } from './hooks/useInactivityTimer';
 import { useWindowDrag } from './hooks/useWindowDrag';
@@ -8,12 +9,13 @@ import GridControls from './components/GridControls';
 import SettingsIcon from './components/SettingsIcon';
 import SettingsPanel from './components/SettingsPanel';
 import ErrorOverlay from './components/ErrorOverlay';
+import { playCloseSfx, playOpenSfx, playTapSfx, warmupAudio } from './audio/sfx';
 
 export default function App() {
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setError = useStore((s) => s.setError);
   const loadConfig = useStore((s) => s.loadConfig);
-  const fadeOpacityRef = useInactivityTimer();
+  const { fadeOpacityRef, resetInactivity } = useInactivityTimer();
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -22,6 +24,53 @@ export default function App() {
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      void warmupAudio().catch((error) => {
+        console.warn('Failed to unlock audio context:', error);
+      });
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
+
+  useEffect(() => {
+    const unlistenPromise = listen<{ visible: boolean }>(
+      'dashboard-visibility-changed',
+      (event) => {
+        if (event.payload?.visible) {
+          void playOpenSfx().catch(() => undefined);
+        } else {
+          void playCloseSfx().catch(() => undefined);
+        }
+      }
+    );
+    return () => {
+      void unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest('button') ||
+        target.closest('[role="switch"]') ||
+        target.closest('select') ||
+        target.closest('input[type="range"]')
+      ) {
+        void playTapSfx().catch(() => undefined);
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => window.removeEventListener('pointerdown', onPointerDown, true);
+  }, []);
 
   useEffect(() => {
     let animationFrame = 0;
@@ -38,8 +87,17 @@ export default function App() {
     return () => cancelAnimationFrame(animationFrame);
   }, [fadeOpacityRef]);
 
+  useEffect(() => {
+    // Avoid residual fade visual when opening/closing settings.
+    if (containerRef.current) {
+      containerRef.current.style.opacity = '1';
+    }
+    resetInactivity();
+  }, [settingsOpen, resetInactivity]);
+
   // ESC / Ctrl+C → close dashboard (unless settings are open)
   const hideWindow = useCallback(() => {
+    void playCloseSfx().catch(() => undefined);
     invoke('hide_window').catch((error) => {
       console.warn('Failed to hide window:', error);
     });

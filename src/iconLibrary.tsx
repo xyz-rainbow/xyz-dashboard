@@ -46,3 +46,24 @@ export function getLibraryIconComponent(value?: string): IconComponent | null {
   const id = getLibraryIconId(value);
   return ICON_MAP.get(id) ?? null;
 }
+
+const PACK_PREFIX = 'pack:';
+
+/** Catalog icons persist as `pack:<packId>:<iconId>` (stable across installs). */
+export function isPackIcon(value?: string): boolean {
+  return typeof value === 'string' && value.startsWith(PACK_PREFIX);
+}
+
+export function parsePackIconRef(
+  value?: string
+): { packId: string; iconId: string } | null {
+  if (!value || !isPackIcon(value)) return null;
+  const rest = value.slice(PACK_PREFIX.length);
+  const i = rest.indexOf(':');
+  if (i <= 0 || i >= rest.length - 1) return null;
+  return { packId: rest.slice(0, i), iconId: rest.slice(i + 1) };
+}
+
+export function toPackIconValue(packId: string, iconId: string): string {
+  return `${PACK_PREFIX}${packId}:${iconId}`;
+}

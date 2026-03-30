@@ -2,13 +2,17 @@ import { motion } from 'framer-motion';
 import { useStore } from '../store';
 import { useDragSnap } from '../hooks/useDragSnap';
 import settingsSvg from '../assets/icons/settings.svg';
+import { playDragSfx, playTapSfx } from '../audio/sfx';
 
 export default function SettingsIcon() {
   const { setSettingsOpen, setError } = useStore();
   const { getCornerPosition, snapToNearestCorner } = useDragSnap();
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleTap = (
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    _info: { point: { x: number; y: number } }
+  ) => {
+    void playTapSfx().catch(() => undefined);
     setSettingsOpen(true);
   };
 
@@ -16,27 +20,29 @@ export default function SettingsIcon() {
     _event: MouseEvent | TouchEvent | PointerEvent,
     info: { point: { x: number; y: number } }
   ) => {
+    void playDragSfx().catch(() => undefined);
     const w = window.innerWidth;
     const h = window.innerHeight;
     snapToNearestCorner(info.point.x, info.point.y, w, h);
   };
 
   const pos = getCornerPosition(window.innerWidth, window.innerHeight);
-  const absPos = getAbsolutePosition(pos);
 
   return (
     <motion.div
       className="absolute z-50 cursor-pointer"
-      style={absPos}
-      animate={absPos}
+      data-no-drag
+      style={{ top: 0, left: 0 }}
+      animate={{ x: pos.x, y: pos.y }}
+      initial={false}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       drag
       dragMomentum={false}
       dragElastic={0.1}
       onDragEnd={handleDragEnd}
+      onTap={handleTap}
       whileHover={{ opacity: 1 }}
       onMouseEnter={() => setError(null)}
-      onClick={handleClick}
     >
       <motion.img
         src={settingsSvg}
@@ -49,16 +55,4 @@ export default function SettingsIcon() {
       />
     </motion.div>
   );
-}
-
-function getAbsolutePosition(pos: { x: number; y: number }) {
-  const isRight = pos.x > window.innerWidth / 2;
-  const isBottom = pos.y > window.innerHeight / 2;
-
-  return {
-    top: isBottom ? 'auto' : `${pos.y}px`,
-    bottom: isBottom ? `${window.innerHeight - pos.y - 24}px` : 'auto',
-    left: isRight ? 'auto' : `${pos.x}px`,
-    right: isRight ? `${window.innerWidth - pos.x - 24}px` : 'auto',
-  };
 }

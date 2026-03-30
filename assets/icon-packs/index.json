@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "updatedAt": "2026-03-30T12:00:00Z",
+  "packs": [
+    {
+      "id": "dev-tools",
+      "name": "Developer Tools",
+      "description": "Terminal, code and automation focused icons.",
+      "categories": ["development", "system"],
+      "tags": ["terminal", "code", "script", "automation"],
+      "createdAt": "2026-03-20T00:00:00Z",
+      "downloads": 1264,
+      "trendingScore": 97,
+      "iconCount": 7,
+      "coverIcon": "icons/terminal.svg"
+    },
+    {
+      "id": "apps-brands",
+      "name": "Apps and Brands",
+      "description": "Common app-style icons for launchers.",
+      "categories": ["apps", "web"],
+      "tags": ["browser", "chat", "design", "video"],
+      "createdAt": "2026-03-27T00:00:00Z",
+      "downloads": 918,
+      "trendingScore": 88,
+      "iconCount": 7,
+      "coverIcon": "icons/browser.svg"
+    },
+    {
+      "id": "system-controls",
+      "name": "System Controls",
+      "description": "Power, settings and system utility icons.",
+      "categories": ["system", "utilities"],
+      "tags": ["power", "settings", "network", "files"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 512,
+      "trendingScore": 76,
+      "iconCount": 7,
+      "coverIcon": "icons/power.svg"
+    },
+    {
+      "id": "media-social",
+      "name": "Media and Social",
+      "description": "Music, camera and social style launcher icons.",
+      "categories": ["media", "social"],
+      "tags": ["music", "camera", "chat", "share"],
+      "createdAt": "2026-03-30T00:00:00Z",
+      "downloads": 689,
+      "trendingScore": 81,
+      "iconCount": 7,
+      "coverIcon": "icons/music.svg"
+    }
+  ]
+}
