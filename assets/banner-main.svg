@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
+  <title id="title">XYZ Dashboard - Banner principal</title>
+  <desc id="desc">Banner oscuro con gradiente moderno y motivo tecnico para el proyecto XYZ Dashboard.</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="55%" stop-color="#111a35"/>
+      <stop offset="100%" stop-color="#1f2a52"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <filter id="blurGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="30"/>
+    </filter>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="420" fill="url(#bgGrad)"/>
+  <rect width="1600" height="420" fill="url(#grid)"/>
+
+  <circle cx="1320" cy="80" r="120" fill="#22d3ee" opacity="0.18" filter="url(#blurGlow)"/>
+  <circle cx="1160" cy="330" r="160" fill="#a78bfa" opacity="0.16" filter="url(#blurGlow)"/>
+
+  <g opacity="0.95">
+    <rect x="96" y="72" width="620" height="276" rx="24" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.18)"/>
+    <rect x="126" y="115" width="250" height="20" rx="10" fill="rgba(255,255,255,0.20)"/>
+    <rect x="126" y="150" width="360" height="12" rx="6" fill="rgba(255,255,255,0.12)"/>
+    <rect x="126" y="174" width="320" height="12" rx="6" fill="rgba(255,255,255,0.10)"/>
+    <g transform="translate(126,216)">
+      <rect x="0" y="0" width="96" height="96" rx="16" fill="rgba(34,211,238,0.20)" stroke="rgba(34,211,238,0.45)"/>
+      <rect x="112" y="0" width="96" height="96" rx="16" fill="rgba(96,165,250,0.18)" stroke="rgba(96,165,250,0.45)"/>
+      <rect x="224" y="0" width="96" height="96" rx="16" fill="rgba(167,139,250,0.18)" stroke="rgba(167,139,250,0.45)"/>
+      <rect x="336" y="0" width="96" height="96" rx="16" fill="rgba(45,212,191,0.18)" stroke="rgba(45,212,191,0.45)"/>
+    </g>
+  </g>
+
+  <g>
+    <text x="790" y="168" fill="#e5e7eb" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="60" font-weight="700">XYZ Dashboard</text>
+    <text x="790" y="222" fill="#cbd5e1" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="28" font-weight="400">Macro-pad flotante para comandos y URLs</text>
+    <rect x="790" y="258" width="540" height="8" rx="4" fill="url(#accentGrad)"/>
+    <text x="790" y="306" fill="#93c5fd" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="22" font-weight="500">Tauri + React + TypeScript</text>
+  </g>
+</svg>

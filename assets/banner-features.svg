@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 360" role="img" aria-labelledby="title desc">
+  <title id="title">XYZ Dashboard - Banner de funciones</title>
+  <desc id="desc">Banner claro y minimalista con acentos gradiente para destacar funciones del proyecto.</desc>
+  <defs>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#94a3b8" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="360" fill="#f8fafc"/>
+  <circle cx="1420" cy="52" r="90" fill="#e0f2fe"/>
+  <circle cx="1260" cy="320" r="120" fill="#ede9fe"/>
+
+  <text x="80" y="94" fill="#0f172a" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="50" font-weight="700">Disenado para flujos rapidos</text>
+  <rect x="80" y="112" width="620" height="7" rx="4" fill="url(#lineGrad)"/>
+  <text x="80" y="150" fill="#334155" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="24">Atajos globales, ejecucion segura y personalizacion visual.</text>
+
+  <g transform="translate(80,190)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="300" height="118" rx="16" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="24" y="42" fill="#0f172a" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="28" font-weight="700">Atajos</text>
+    <text x="24" y="78" fill="#475569" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="20">Globales y numpad</text>
+  </g>
+
+  <g transform="translate(410,190)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="300" height="118" rx="16" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="24" y="42" fill="#0f172a" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="28" font-weight="700">Seguridad</text>
+    <text x="24" y="78" fill="#475569" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="20">Ejecucion endurecida</text>
+  </g>
+
+  <g transform="translate(740,190)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="300" height="118" rx="16" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="24" y="42" fill="#0f172a" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="28" font-weight="700">Iconos</text>
+    <text x="24" y="78" fill="#475569" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="20">SVG y personalizados</text>
+  </g>
+
+  <g transform="translate(1070,190)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="430" height="118" rx="16" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="24" y="42" fill="#0f172a" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="28" font-weight="700">Stack</text>
+    <text x="24" y="78" fill="#475569" font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="20">Tauri + React + TypeScript</text>
+  </g>
+</svg>
