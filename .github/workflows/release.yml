@@ -16,11 +16,14 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest"
-            args: ""
+            args: "--bundles dmg"
+            artifact_note: "Official macOS artifact: .dmg"
           - platform: "ubuntu-22.04"
-            args: ""
+            args: "--bundles appimage,deb"
+            artifact_note: "Official Linux artifacts: .AppImage + .deb"
           - platform: "windows-latest"
-            args: ""
+            args: "--bundles nsis"
+            artifact_note: "Official Windows artifact: .exe (NSIS)"
 
     runs-on: ${{ matrix.platform }}
 
@@ -61,7 +64,15 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "XYZ Dashboard ${{ github.ref_name }}"
-          releaseBody: "Cross-platform build artifacts for ${{ github.ref_name }}."
+          releaseBody: |
+            Cross-platform build artifacts for ${{ github.ref_name }}.
+
+            Official outputs:
+            - Linux: `.AppImage`, `.deb`
+            - macOS: `.dmg`
+            - Windows: `.exe` (NSIS)
+
+            Generated in job: ${{ matrix.artifact_note }}
           releaseDraft: false
           prerelease: false
           includeDebug: false

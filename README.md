@@ -150,11 +150,21 @@ pnpm tauri build
 npm run tauri build
 ```
 
-### Artefactos por plataforma (Tauri v2)
+### Politica de artefactos oficiales (release automatizada)
 
-- **Linux**: `.deb`, `.AppImage` (y opcionalmente `.rpm` segun toolchain)
-- **macOS**: `.app` y `.dmg`
-- **Windows**: `.msi` y/o `.exe` (NSIS), segun `bundle.targets`
+- **Linux**: `.AppImage` + `.deb`
+- **macOS**: `.dmg`
+- **Windows**: `.exe` (NSIS)
+
+Esta politica ya esta configurada en `.github/workflows/release.yml` para las proximas versiones etiquetadas (`v*`).
+
+### Artefactos opcionales
+
+Si en el futuro se necesitan, se pueden habilitar tambien:
+
+- Linux: `.rpm`
+- macOS: `.app.tar.gz`
+- Windows: `.msi`
 
 ### Releases GitHub
 
