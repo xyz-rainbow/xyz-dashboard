@@ -1,3 +1,17 @@
+/**
+ *  _____             _           _                          
+ * |  __ \           (_)         | |                         
+ * | |__) | __ _ _ __  _ __  _ __| |__   ___   __ _ _   _   
+ * |  _  / / _` | '  \| | '_ \| '_ \ '_ \ / _ \ / _` | | | |  
+ * | | \ \| (_| | | | | | | | | |_) | | | (_) | (_| | |_| |  
+ * |_|  \_\\__,_|_| |_|_|_| |_|_.__/|_| |_|\___/ \__, |\__, |  
+ *                                                __/ | __/ | 
+ *                                               |___/ |___/  
+ * 
+ * Aplicación Principal - XYZ Dashboard
+ * #xyz-rainbow #xyz-rainbowtechnology #rainbowtechnology.xyz
+ */
+
 import { useEffect, useRef, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -10,22 +24,34 @@ import SettingsIcon from './components/SettingsIcon';
 import SettingsPanel from './components/SettingsPanel';
 import ErrorOverlay from './components/ErrorOverlay';
 import { playCloseSfx, playOpenSfx, playTapSfx, warmupAudio } from './audio/sfx';
+import { applyThemeMode } from './themePresets';
+import { runBootWithSplash } from './bootSplash';
 
 export default function App() {
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setError = useStore((s) => s.setError);
   const loadConfig = useStore((s) => s.loadConfig);
+  const themePreset = useStore((s) => s.themePreset);
+  const multicolorThemes = useStore((s) => s.multicolorThemes);
   const { fadeOpacityRef, resetInactivity } = useInactivityTimer();
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Gestión del arrastre de la ventana
   useWindowDrag(panelRef);
 
   useEffect(() => {
-    loadConfig();
+    // Iniciar con pantalla de carga (Splash)
+    void runBootWithSplash(loadConfig);
   }, [loadConfig]);
 
   useEffect(() => {
+    // Aplicar tema visual
+    applyThemeMode(themePreset, multicolorThemes);
+  }, [themePreset, multicolorThemes]);
+
+  useEffect(() => {
+    // Desbloquear audio tras la primera interacción
     const unlockAudio = () => {
       void warmupAudio().catch((error) => {
         console.warn('Failed to unlock audio context:', error);
@@ -40,6 +66,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Calentar audio al recuperar visibilidad o foco
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void warmupAudio();
+    };
+    const onFocus = () => {
+      void warmupAudio();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Escuchar eventos de visibilidad de Tauri
     const unlistenPromise = listen<{ visible: boolean }>(
       'dashboard-visibility-changed',
       (event) => {
@@ -56,6 +99,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Sonido de clic en elementos interactivos
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
       if (!target) return;
@@ -73,6 +117,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Animación de desvanecimiento por inactividad
     let animationFrame = 0;
     let lastOpacity = -1;
     const tick = () => {
@@ -88,14 +133,14 @@ export default function App() {
   }, [fadeOpacityRef]);
 
   useEffect(() => {
-    // Avoid residual fade visual when opening/closing settings.
+    // Evitar desvanecimiento cuando los ajustes están abiertos
     if (containerRef.current) {
       containerRef.current.style.opacity = '1';
     }
     resetInactivity();
   }, [settingsOpen, resetInactivity]);
 
-  // ESC / Ctrl+C → close dashboard (unless settings are open)
+  // Ocultar ventana del dashboard
   const hideWindow = useCallback(() => {
     void playCloseSfx().catch(() => undefined);
     invoke('hide_window').catch((error) => {
@@ -104,8 +149,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // ESC / Ctrl+C → cerrar dashboard (si los ajustes están cerrados)
     const handler = (e: KeyboardEvent) => {
-      if (settingsOpen) return; // let settings handle ESC
+      if (settingsOpen) return;
       if (e.key === 'Escape' || (e.ctrlKey && e.key === 'c')) {
         e.preventDefault();
         hideWindow();
@@ -115,11 +161,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [settingsOpen, hideWindow]);
 
-  // Click outside the panel → close dashboard
+  // Click fuera del panel → cerrar dashboard
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (settingsOpen) return;
-      // If click is on the outer div (outside the glass panel), hide
       if (e.target === containerRef.current) {
         hideWindow();
       }

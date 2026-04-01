@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">XYZ Dashboard 3x3 Preview (Last Empty)</title>
+  <desc id="desc">Dashboard preview showing a 3 by 3 grid with icons assigned in eight cells and the last cell intentionally empty.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1020"/>
+      <stop offset="60%" stop-color="#17173c"/>
+      <stop offset="100%" stop-color="#081419"/>
+    </linearGradient>
+    <linearGradient id="panelStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8fe8ff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#c392ff" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="btnFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.40"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="720" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="275" y="70" width="650" height="580" rx="28" fill="#0f111d" fill-opacity="0.64" stroke="url(#panelStroke)" stroke-width="1.5"/>
+    <rect x="275" y="70" width="650" height="580" rx="28" fill="#ffffff" fill-opacity="0.03"/>
+  </g>
+
+  <text x="315" y="112" fill="#d7defa" font-family="monospace" font-size="20" letter-spacing="1.2">XYZ Dashboard</text>
+  <text x="315" y="138" fill="#9ea9cc" font-family="monospace" font-size="12">3x3 layout " slot 9 empty</text>
+
+  <g transform="translate(332,170)">
+    <!-- 3x3 grid cells -->
+    <rect x="0" y="0" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="182" y="0" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="364" y="0" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="0" y="148" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="182" y="148" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="364" y="148" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="0" y="296" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="182" y="296" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+    <rect x="364" y="296" width="160" height="130" rx="16" fill="url(#btnFill)" stroke="#ffffff" stroke-opacity="0.20"/>
+
+    <!-- icons in first 8 cells -->
+    <path d="M80 50l18 28H62z" fill="#75efff"/>
+    <rect x="248" y="44" width="28" height="28" rx="7" fill="#ff93dc"/>
+    <circle cx="444" cy="58" r="16" fill="#97ff88"/>
+    <path d="M70 208h20l8 10-8 10H70l-8-10z" fill="#ffb777"/>
+    <rect x="248" y="194" width="28" height="28" rx="14" fill="#8fa7ff"/>
+    <path d="M444 196l16 28h-32z" fill="#72ffd9"/>
+    <circle cx="80" cy="358" r="16" fill="#ff7ea7"/>
+    <rect x="248" y="344" width="28" height="28" rx="5" fill="#ffd86b"/>
+
+    <!-- last empty slot (+) -->
+    <line x1="444" y1="344" x2="444" y2="372" stroke="#ffffff" stroke-opacity="0.30" stroke-width="3" stroke-linecap="round"/>
+    <line x1="430" y1="358" x2="458" y2="358" stroke="#ffffff" stroke-opacity="0.30" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(868,594)">
+    <circle cx="24" cy="24" r="20" fill="#111829" stroke="#a2d8ff" stroke-opacity="0.5"/>
+    <circle cx="24" cy="24" r="7" fill="#d9d0ff"/>
+  </g>
+</svg>

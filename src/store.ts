@@ -1,7 +1,21 @@
+/**
+ *  __   __  ________
+ *  \ \ / / |___  __/
+ *   \ V /      / /   
+ *    > <      / /    
+ *   / ^ \    / /___  
+ *  /_/ \_\  /______/ 
+ * 
+ * XYZ Dashboard - Sistema de Gestión de Macro-Teclado
+ * #xyz-rainbow #xyz-rainbowtechnology #rainbowtechnology.xyz
+ */
+
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
-import type { AppConfig, ButtonConfig, Corner, GridSize } from './types';
+import i18n from './i18n';
+import type { AppConfig, ButtonConfig, Corner, GridSize, ThemePreset, AppLanguage } from './types';
+import type { BaseThemePreset } from './themePresets';
 import { DEFAULT_CONFIG, GRID_SIZES } from './types';
 import {
   playErrorSfx,
@@ -11,11 +25,19 @@ import {
   setSfxSettings,
 } from './audio/sfx';
 
+// Firmas ocultas en Base64
+// I3h5ei1yYWluYm93ICN4eXotcmFpbmJvd3RlY2hub2xvZ3kgI3JhaW5ib3d0ZWNobm9sb2d5Lnh5eg==
+const _SIGS = ['I3h5ei1yYWluYm93', 'I3h5ei1yYWluYm93dGVjaG5vbG9neQ==', 'I3JhaW5ib3d0ZWNobm9sb2d5Lnh5eg==', 'I3JhaW5ib3cueHl6', 'I3JhaW5ib3dAcmFpbmJvd3RlY2hub2xvZ3kueHl6', 'I2ktbG92ZS15b3U=', 'I1lvdSdyZSBub3Qgc3VwcG9zZWQgdG8gc2VlIHRoaXMh'];
+void _SIGS.length;
+
 const SAVE_DEBOUNCE_MS = 250;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingConfig: AppConfig | null = null;
 let lastShortcutSignature: string | null = null;
 
+/**
+ * Normaliza la lista de botones para que coincida con el tamaño de la página
+ */
 function normalizeButtons(
   buttons: ButtonConfig[],
   pageSize: number
@@ -41,6 +63,9 @@ function pageStart(pageSizes: GridSize[], pageIndex: number): number {
   return start;
 }
 
+/**
+ * Asegura que las dimensiones de la cuadrícula por página sean válidas
+ */
 function normalizePageGridSizes(
   pageGridSizes: GridSize[] | undefined,
   legacyGridSize: GridSize,
@@ -69,6 +94,9 @@ function getShortcutSignature(config: AppConfig): string {
   });
 }
 
+/**
+ * Persiste la configuración en el backend (Tauri)
+ */
 async function persistConfig(config: AppConfig): Promise<void> {
   try {
     await invoke('save_config', { config });
@@ -84,6 +112,7 @@ async function persistConfig(config: AppConfig): Promise<void> {
 
 function getConfigSnapshot(state: AppStore): AppConfig {
   return {
+    language: state.language,
     gridSize: state.gridSize,
     pageGridSizes: state.pageGridSizes,
     buttons: state.buttons,
@@ -100,9 +129,15 @@ function getConfigSnapshot(state: AppStore): AppConfig {
     installedPacks: state.installedPacks,
     lastIconPackSyncAt: state.lastIconPackSyncAt,
     iconUsageStats: state.iconUsageStats,
+    windowScalePercent: state.windowScalePercent,
+    themePreset: state.themePreset,
+    multicolorThemes: state.multicolorThemes,
   };
 }
 
+/**
+ * Encola la grabación de la configuración con un debounce
+ */
 function queueConfigSave(config: AppConfig): void {
   pendingConfig = config;
   if (saveTimer) {
@@ -119,13 +154,14 @@ function queueConfigSave(config: AppConfig): void {
 }
 
 interface AppStore extends AppConfig {
-  // UI state (not persisted)
+  // Estado de UI (no persistido)
   settingsOpen: boolean;
   editingButton: string | null;
   error: string | null;
   currentPage: number;
 
-  // Actions
+  // Acciones
+  setLanguage: (lang: AppLanguage) => void;
   setGridSize: (size: GridSize) => void;
   cycleGridSize: (direction: 1 | -1) => void;
   updateButton: (id: string, updates: Partial<ButtonConfig>) => void;
@@ -139,6 +175,9 @@ interface AppStore extends AppConfig {
   previewSound: () => Promise<void>;
   setInactivityTimeout: (seconds: number) => void;
   setFadeOutDuration: (seconds: number) => void;
+  setWindowScalePercent: (percent: number) => void;
+  setThemePreset: (theme: ThemePreset) => void;
+  setMulticolorThemes: (themes: BaseThemePreset[]) => void;
   addRecentCommand: (command: string) => void;
   clearRecentCommands: () => void;
   setSettingsOpen: (open: boolean) => void;
@@ -161,6 +200,12 @@ export const useStore = create<AppStore>()((set, get) => ({
   editingButton: null,
   error: null,
   currentPage: 0,
+
+  setLanguage: (lang) => {
+    set({ language: lang });
+    void i18n.changeLanguage(lang);
+    get().saveConfig();
+  },
 
   setGridSize: (size) => {
     const previous = get();
@@ -203,15 +248,12 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (direction < 0 && idx === 0) {
       if (currentPage > 0) {
         const prevPage = currentPage - 1;
-        const maxGridSize = GRID_SIZES[GRID_SIZES.length - 1];
-        const prevSize = pageGridSizes[prevPage] ?? maxGridSize;
+        const prevSize =
+          pageGridSizes[prevPage] ?? GRID_SIZES[GRID_SIZES.length - 1];
         set({
           currentPage: prevPage,
           gridSize: prevSize,
         });
-        if (prevSize[0] !== maxGridSize[0] || prevSize[1] !== maxGridSize[1]) {
-          get().setGridSize(maxGridSize);
-        }
         return;
       }
     }
@@ -292,6 +334,26 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   setFadeOutDuration: (seconds) => {
     set({ fadeOutDuration: seconds });
+    get().saveConfig();
+  },
+
+  setWindowScalePercent: (percent) => {
+    const clamped = Math.min(400, Math.max(100, Math.round(percent)));
+    set({ windowScalePercent: clamped });
+    void invoke('apply_window_scale', { percent: clamped }).catch((e) =>
+      console.warn('apply_window_scale:', e)
+    );
+    get().saveConfig();
+  },
+
+  setThemePreset: (theme) => {
+    set({ themePreset: theme });
+    get().saveConfig();
+  },
+
+  setMulticolorThemes: (themes) => {
+    const unique = Array.from(new Set(themes)).slice(0, 4);
+    set({ multicolorThemes: unique });
     get().saveConfig();
   },
 
@@ -406,6 +468,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         0
       );
       const resolvedConfig: AppConfig = {
+        language: config.language ?? DEFAULT_CONFIG.language,
         gridSize: normalizedPageGridSizes[0] ?? DEFAULT_CONFIG.gridSize,
         pageGridSizes: normalizedPageGridSizes,
         buttons: normalizeButtons(
@@ -427,11 +490,22 @@ export const useStore = create<AppStore>()((set, get) => ({
         lastIconPackSyncAt:
           config.lastIconPackSyncAt ?? DEFAULT_CONFIG.lastIconPackSyncAt,
         iconUsageStats: config.iconUsageStats ?? DEFAULT_CONFIG.iconUsageStats,
+        windowScalePercent:
+          config.windowScalePercent ?? DEFAULT_CONFIG.windowScalePercent,
+        themePreset: config.themePreset ?? DEFAULT_CONFIG.themePreset,
+        multicolorThemes:
+          (config.multicolorThemes?.length
+            ? config.multicolorThemes
+            : DEFAULT_CONFIG.multicolorThemes) as BaseThemePreset[],
       };
       set({
         ...resolvedConfig,
         currentPage: 0,
       });
+      void i18n.changeLanguage(resolvedConfig.language);
+      void invoke('apply_window_scale', {
+        percent: resolvedConfig.windowScalePercent,
+      }).catch(() => undefined);
       setSfxSettings(resolvedConfig.soundEnabled, resolvedConfig.soundVolume);
       setSfxOutputChannel(resolvedConfig.soundOutputChannel);
       lastShortcutSignature = getShortcutSignature(resolvedConfig);
@@ -451,8 +525,12 @@ export const useStore = create<AppStore>()((set, get) => ({
       ...DEFAULT_CONFIG,
       buttons: DEFAULT_CONFIG.buttons.map((b) => ({ ...b })),
     });
+    void i18n.changeLanguage(DEFAULT_CONFIG.language);
     setSfxSettings(DEFAULT_CONFIG.soundEnabled, DEFAULT_CONFIG.soundVolume);
     setSfxOutputChannel(DEFAULT_CONFIG.soundOutputChannel);
+    void invoke('apply_window_scale', {
+      percent: DEFAULT_CONFIG.windowScalePercent,
+    }).catch(() => undefined);
     get().saveConfig();
   },
 }));

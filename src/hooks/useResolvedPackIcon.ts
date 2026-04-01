@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { parsePackIconRef } from '../iconLibrary';
+import { toDisplaySrc } from '../utils/fileImageSrc';
 
-/** Resolves `pack:<packId>:<iconId>` to an absolute file URL for `<img src>`. */
+/** Resolves `pack:<packId>:<iconId>` to a WebView-safe URL for `<img src>`. */
 export function useResolvedPackIconSrc(iconValue?: string) {
   const packRef = parsePackIconRef(iconValue);
   const [src, setSrc] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function useResolvedPackIconSrc(iconValue?: string) {
       iconId: packRef.iconId,
     })
       .then((path) => {
-        if (!cancelled) setSrc(path);
+        if (!cancelled) setSrc(toDisplaySrc(path));
       })
       .catch(() => {
         if (!cancelled) setSrc(null);

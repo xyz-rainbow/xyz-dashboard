@@ -2,13 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/app-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri + React + Typescript</title>
+    <title>XYZ Dashboard</title>
   </head>
 
   <body>
     <div id="root"></div>
+    <div
+      id="boot-splash"
+      class="boot-splash"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading XYZ Dashboard"
+    >
+      <img
+        class="boot-splash__logo"
+        src="/rainbow-splash-logo.png"
+        width="440"
+        height="160"
+        alt="Rainbow Technology"
+      />
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

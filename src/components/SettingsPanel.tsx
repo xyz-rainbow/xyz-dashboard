@@ -1,5 +1,20 @@
+/**
+ *  _____             _           _                          
+ * |  __ \           (_)         | |                         
+ * | |__) | __ _ _ __  _ __  _ __| |__   ___   __ _ _   _   
+ * |  _  / / _` | '  \| | '_ \| '_ \ '_ \ / _ \ / _` | | | |  
+ * | | \ \| (_| | | | | | | | | |_) | | | (_) | (_| | |_| |  
+ * |_|  \_\\__,_|_| |_|_|_| |_|_.__/|_| |_|\___/ \__, |\__, |  
+ *                                                __/ | __/ | 
+ *                                               |___/ |___/  
+ * 
+ * Panel de Ajustes - XYZ Dashboard
+ * #xyz-rainbow #xyz-rainbowtechnology #rainbowtechnology.xyz
+ */
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Trans, useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { useStore } from '../store';
@@ -24,20 +39,28 @@ import {
   type IconSortMode,
 } from '../iconCatalog';
 import { useResolvedPackIconSrc } from '../hooks/useResolvedPackIcon';
+import { toDisplaySrc } from '../utils/fileImageSrc';
+import { THEME_PRESETS } from '../themePresets';
+import type { ThemePreset, AppLanguage } from '../types';
+import type { BaseThemePreset } from '../themePresets';
 
 const TABS = [
-  { id: 'buttons', label: 'Buttons' },
-  { id: 'icons', label: 'Icons' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'shortcuts', label: 'Shortcuts' },
-  { id: 'sounds', label: 'Sounds' },
-  { id: 'history', label: 'History' },
+  { id: 'buttons', labelKey: 'tabs.buttons' },
+  { id: 'icons', labelKey: 'tabs.icons' },
+  { id: 'appearance', labelKey: 'tabs.appearance' },
+  { id: 'shortcuts', labelKey: 'tabs.shortcuts' },
+  { id: 'sounds', labelKey: 'tabs.sounds' },
+  { id: 'history', labelKey: 'tabs.history' },
+  { id: 'language', labelKey: 'tabs.language' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
 
 export default function SettingsPanel() {
+  const { t } = useTranslation();
   const {
+    language,
+    setLanguage,
     settingsOpen,
     setSettingsOpen,
     gridSize,
@@ -67,12 +90,19 @@ export default function SettingsPanel() {
     recentCommands,
     clearRecentCommands,
     resetDefaults,
+    windowScalePercent,
+    setWindowScalePercent,
+    themePreset,
+    setThemePreset,
+    multicolorThemes,
+    setMulticolorThemes,
+    setError,
   } = useStore();
 
   const [tab, setTab] = useState<TabId>('buttons');
   const [selectedBtn, setSelectedBtn] = useState<string | null>(null);
 
-  // Reset state when panel opens, auto-select editing button
+  // Reiniciar estado al abrir el panel, auto-seleccionar botón en edición
   useEffect(() => {
     if (settingsOpen) {
       setTab('buttons');
@@ -81,7 +111,7 @@ export default function SettingsPanel() {
     }
   }, [settingsOpen]);
 
-  // ESC to close
+  // ESC para cerrar
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape' && settingsOpen) {
@@ -103,134 +133,132 @@ export default function SettingsPanel() {
   if (!settingsOpen) return null;
 
   return (
-    <AnimatePresence>
-      {settingsOpen && (
-        <motion.div
-          className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-[20px]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setSettingsOpen(false)}
-          data-no-drag
-        >
-          <motion.div
-            className="w-[92%] h-[88%] flex flex-col overflow-hidden rounded-2xl border border-white/10"
-            style={{ background: 'rgba(10, 10, 10, 0.92)', backdropFilter: 'blur(32px)' }}
-            initial={{ scale: 0.92, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.92, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
+    <div
+      className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-[20px]"
+      onClick={() => setSettingsOpen(false)}
+      data-no-drag
+    >
+      <div
+        className="w-[92%] h-[88%] min-h-0 flex flex-col overflow-hidden rounded-2xl border border-white/10"
+        style={{ background: 'rgba(10, 10, 10, 0.92)', backdropFilter: 'blur(32px)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+            {/* Cabecera */}
             <div
               className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-white/8 cursor-move"
               data-drag-window
             >
               <span className="text-white/70 text-xs font-semibold tracking-wide">
-                Settings
+                {t('settings')}
               </span>
               <button
                 className="text-white/30 hover:text-white/60 text-xs px-2 py-0.5 rounded-md hover:bg-white/5 transition-colors"
                 onClick={() => setSettingsOpen(false)}
                 data-no-drag
               >
-                ESC
+                {t('common.esc')}
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-0.5 px-3 pt-2 border-b border-white/8">
-              {TABS.map((t) => (
+            {/* Pestañas */}
+            <div className="flex gap-0.5 px-3 pt-2 border-b border-white/8 shrink-0 overflow-x-auto no-scrollbar">
+              {TABS.map((tItem) => (
                 <button
-                  key={t.id}
-                  className={`px-3 py-1.5 text-[11px] rounded-t-lg transition-colors ${
-                    tab === t.id
+                  key={tItem.id}
+                  className={`px-3 py-1.5 text-[11px] rounded-t-lg transition-colors whitespace-nowrap ${
+                    tab === tItem.id
                       ? 'text-white/80 bg-white/8 border-b-2 border-white/30'
                       : 'text-white/35 hover:text-white/55 hover:bg-white/4'
                   }`}
-                  onClick={() => { setTab(t.id); setSelectedBtn(null); }}
+                  onClick={() => { setTab(tItem.id); setSelectedBtn(null); }}
                   data-no-drag
                 >
-                  {t.label}
+                  {t(tItem.labelKey)}
                 </button>
               ))}
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-4 py-3" data-no-drag>
-              <AnimatePresence mode="wait">
-                {tab === 'buttons' && (
-                  <TabButtons
-                    key="buttons"
-                    buttons={buttons}
-                    gridSize={gridSize}
-                    selectedBtn={selectedBtn}
-                    onSelectBtn={setSelectedBtn}
-                    updateButton={updateButton}
-                  />
-                )}
-                {tab === 'appearance' && (
-                  <TabAppearance
-                    key="appearance"
-                    settingsIconCorner={settingsIconCorner}
-                    setSettingsIconCorner={setSettingsIconCorner}
-                  />
-                )}
-                {tab === 'icons' && (
-                  <TabIcons
-                    key="icons"
-                    buttons={buttons}
-                    updateButton={updateButton}
-                    trackIconUsage={trackIconUsage}
-                    iconUsageStats={iconUsageStats}
-                  />
-                )}
-                {tab === 'shortcuts' && (
-                  <TabShortcuts
-                    key="shortcuts"
-                    shortcutKey={shortcutKey}
-                    setShortcutKey={setShortcutKey}
-                    numpadShortcuts={numpadShortcuts}
-                    setNumpadShortcuts={setNumpadShortcuts}
-                    inactivityTimeout={inactivityTimeout}
-                    setInactivityTimeout={setInactivityTimeout}
-                    fadeOutDuration={fadeOutDuration}
-                    setFadeOutDuration={setFadeOutDuration}
-                  />
-                )}
-                {tab === 'sounds' && (
-                  <TabSounds
-                    key="sounds"
-                    soundEnabled={soundEnabled}
-                    setSoundEnabled={setSoundEnabled}
-                    soundVolume={soundVolume}
-                    setSoundVolume={setSoundVolume}
-                    soundOutputChannel={soundOutputChannel}
-                    setSoundOutputChannel={setSoundOutputChannel}
-                    soundTestSound={soundTestSound}
-                    setSoundTestSound={setSoundTestSound}
-                    previewSound={previewSound}
-                  />
-                )}
-                {tab === 'history' && (
-                  <TabHistory
-                    key="history"
-                    recentCommands={recentCommands}
-                    clearRecentCommands={clearRecentCommands}
-                    resetDefaults={resetDefaults}
-                  />
-                )}
-              </AnimatePresence>
+            {/* Contenido */}
+            <div
+              className="flex-1 min-h-0 overflow-y-auto scroll-smooth overscroll-contain px-4 py-3"
+              data-no-drag
+            >
+              {tab === 'buttons' && (
+                <TabButtons
+                  buttons={buttons}
+                  gridSize={gridSize}
+                  selectedBtn={selectedBtn}
+                  onSelectBtn={setSelectedBtn}
+                  updateButton={updateButton}
+                />
+              )}
+              {tab === 'appearance' && (
+                <TabAppearance
+                  settingsIconCorner={settingsIconCorner}
+                  setSettingsIconCorner={setSettingsIconCorner}
+                  windowScalePercent={windowScalePercent}
+                  setWindowScalePercent={setWindowScalePercent}
+                  themePreset={themePreset}
+                  setThemePreset={setThemePreset}
+                  multicolorThemes={multicolorThemes}
+                  setMulticolorThemes={setMulticolorThemes}
+                />
+              )}
+              {tab === 'icons' && (
+                <TabIcons
+                  buttons={buttons}
+                  updateButton={updateButton}
+                  trackIconUsage={trackIconUsage}
+                  iconUsageStats={iconUsageStats}
+                  setError={setError}
+                />
+              )}
+              {tab === 'shortcuts' && (
+                <TabShortcuts
+                  shortcutKey={shortcutKey}
+                  setShortcutKey={setShortcutKey}
+                  numpadShortcuts={numpadShortcuts}
+                  setNumpadShortcuts={setNumpadShortcuts}
+                  inactivityTimeout={inactivityTimeout}
+                  setInactivityTimeout={setInactivityTimeout}
+                  fadeOutDuration={fadeOutDuration}
+                  setFadeOutDuration={setFadeOutDuration}
+                />
+              )}
+              {tab === 'sounds' && (
+                <TabSounds
+                  soundEnabled={soundEnabled}
+                  setSoundEnabled={setSoundEnabled}
+                  soundVolume={soundVolume}
+                  setSoundVolume={setSoundVolume}
+                  soundOutputChannel={soundOutputChannel}
+                  setSoundOutputChannel={setSoundOutputChannel}
+                  soundTestSound={soundTestSound}
+                  setSoundTestSound={setSoundTestSound}
+                  previewSound={previewSound}
+                />
+              )}
+              {tab === 'history' && (
+                <TabHistory
+                  recentCommands={recentCommands}
+                  clearRecentCommands={clearRecentCommands}
+                  resetDefaults={resetDefaults}
+                />
+              )}
+              {tab === 'language' && (
+                <TabLanguage
+                  language={language}
+                  setLanguage={setLanguage}
+                />
+              )}
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
 function ButtonIconPreview({ icon }: { icon?: string }) {
+  const { t } = useTranslation();
   const isLib = isLibraryIcon(icon);
   const Lib = getLibraryIconComponent(icon);
   const isPack = isPackIcon(icon);
@@ -240,12 +268,12 @@ function ButtonIconPreview({ icon }: { icon?: string }) {
   if (isLib && Lib) return <Lib className="w-10 h-10 text-white/80" />;
   if (isPack) {
     if (!packSrc) {
-      return <span className="text-white/35 text-xs">Loading…</span>;
+      return <span className="text-white/35 text-xs">{t('common.loading')}</span>;
     }
     return (
       <img
         src={packSrc}
-        alt="preview"
+        alt={t('settingsPanel.previewAlt')}
         className="w-10 h-10 object-contain"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = 'none';
@@ -256,8 +284,8 @@ function ButtonIconPreview({ icon }: { icon?: string }) {
   }
   return (
     <img
-      src={icon}
-      alt="preview"
+      src={toDisplaySrc(icon)}
+      alt={t('settingsPanel.previewAlt')}
       className="w-10 h-10 object-contain"
       onError={(e) => {
         (e.target as HTMLImageElement).style.display = 'none';
@@ -282,6 +310,7 @@ function TabButtons({
   onSelectBtn: (id: string | null) => void;
   updateButton: (id: string, updates: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const [overwriteDetectedIcon, setOverwriteDetectedIcon] = useState(false);
 
   if (selectedBtn) {
@@ -301,23 +330,23 @@ function TabButtons({
           className="self-start text-[11px] text-white/30 hover:text-white/60 flex items-center gap-1"
           onClick={() => onSelectBtn(null)}
         >
-          &larr; Back
+          &larr; {t('common.back')}
         </button>
 
-        <Section title="Label">
+        <Section title={t('buttons.label')}>
           <input
             className="settings-input w-full"
-            placeholder="Display name"
+            placeholder={t('buttons.displayName')}
             value={btn.label}
             onChange={(e) => updateButton(btn.id, { label: e.target.value })}
           />
         </Section>
 
-        <Section title="Execution">
+        <Section title={t('buttons.execution')}>
           <div className="flex gap-2 mb-2">
             <TypeBadge
               active={btn.command.startsWith('http://') || btn.command.startsWith('https://')}
-              label="Web"
+              label={t('buttons.web')}
             />
             <TypeBadge
               active={
@@ -325,15 +354,15 @@ function TabButtons({
                 !btn.command.startsWith('http://') &&
                 !btn.command.startsWith('https://')
               }
-              label="Command"
+              label={t('buttons.command')}
             />
           </div>
           <input
             className="settings-input w-full font-mono"
             placeholder={
               btn.command.startsWith('http')
-                ? 'https://example.com'
-                : 'e.g. firefox, ls -la, xdotool ...'
+                ? t('settingsPanel.buttons.placeholderUrl')
+                : t('settingsPanel.buttons.placeholderCommand')
             }
             value={btn.command}
             onChange={(e) => updateButton(btn.id, { command: e.target.value })}
@@ -346,7 +375,7 @@ function TabButtons({
                   const selected = await open({
                     multiple: false,
                     directory: false,
-                    title: 'Select executable or script',
+                    title: t('settingsPanel.buttons.openExecutableTitle'),
                   });
                   if (typeof selected !== 'string' || !selected) return;
                   let nextCommand = selected;
@@ -374,7 +403,7 @@ function TabButtons({
                 })();
               }}
             >
-              Select file or script...
+              {t('buttons.selectFile')}
             </button>
           </div>
           <label className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/45">
@@ -383,15 +412,15 @@ function TabButtons({
               checked={overwriteDetectedIcon}
               onChange={(e) => setOverwriteDetectedIcon(e.target.checked)}
             />
-            Overwrite existing icon when auto-detected
+            {t('buttons.overwriteIcon')}
           </label>
           <p className="text-white/25 text-[10px] mt-1">
-            URLs open in browser. Anything else runs as a shell command.
+            {t('settingsPanel.buttons.executionHint')}
           </p>
         </Section>
 
-        <Section title="Icon">
-          <p className="text-white/35 text-[10px] mb-1">Library icons</p>
+        <Section title={t('buttons.icon')}>
+          <p className="text-white/35 text-[10px] mb-1">{t('buttons.libraryIcons')}</p>
           <div className="grid grid-cols-5 gap-1.5">
             {ICON_LIBRARY.map((entry) => {
               const Icon = entry.icon;
@@ -420,28 +449,33 @@ function TabButtons({
                   const selected = await open({
                     multiple: false,
                     directory: false,
-                    title: 'Select custom icon',
-                    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp'] }],
+                    title: t('settingsPanel.buttons.openIconTitle'),
+                    filters: [
+                      {
+                        name: t('settingsPanel.buttons.imageFilterName'),
+                        extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp'],
+                      },
+                    ],
                   });
                   if (typeof selected !== 'string' || !selected) return;
                   updateButton(btn.id, { icon: selected });
                 })();
               }}
             >
-              Select custom icon...
+              {t('buttons.selectCustom')}
             </button>
             {btn.icon && (
               <button
                 className="text-[10px] px-2 py-1 rounded-md bg-white/6 hover:bg-white/10 text-white/60 transition-colors"
                 onClick={() => updateButton(btn.id, { icon: '' })}
               >
-                Clear
+                {t('common.clear')}
               </button>
             )}
           </div>
           <input
             className="settings-input w-full font-mono mt-2"
-            placeholder="/path/to/icon.svg"
+            placeholder={t('settingsPanel.buttons.iconPathPlaceholder')}
             value={btn.icon || ''}
             onChange={(e) => updateButton(btn.id, { icon: e.target.value })}
           />
@@ -451,9 +485,13 @@ function TabButtons({
             </div>
           )}
           <p className="text-white/25 text-[10px] mt-1">
-            Library <code className="text-white/40">lib:</code>, catalog{' '}
-            <code className="text-white/40">pack:id:id</code>, file path, or empty
-            for label initial.
+            <Trans
+              i18nKey="settingsPanel.buttons.iconHint"
+              components={{
+                c1: <code className="text-white/40" />,
+                c2: <code className="text-white/40" />,
+              }}
+            />
           </p>
         </Section>
       </motion.div>
@@ -467,7 +505,7 @@ function TabButtons({
       exit={{ opacity: 0, x: -20 }}
     >
       <p className="text-white/25 text-[10px] mb-2">
-        Grid {gridSize[1]}x{gridSize[0]} &mdash; {gridSize[0] * gridSize[1]} cells
+        {t('buttons.gridInfo', { cols: gridSize[1], rows: gridSize[0], cells: gridSize[0] * gridSize[1] })}
       </p>
       <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridSize[1]}, 1fr)` }}>
         {buttons.map((btn, i) => (
@@ -486,7 +524,7 @@ function TabButtons({
               )}
             </div>
             <span className="text-[9px] text-white/30 truncate max-w-full">
-              {btn.label || 'Empty'}
+              {btn.label || t('common.empty')}
             </span>
           </button>
         ))}
@@ -516,12 +554,15 @@ function TabIcons({
   updateButton,
   trackIconUsage,
   iconUsageStats,
+  setError,
 }: {
   buttons: { id: string; label: string; command: string; icon?: string }[];
   updateButton: (id: string, updates: Record<string, unknown>) => void;
   trackIconUsage: (iconKey: string, amount?: number) => void;
   iconUsageStats: Record<string, number>;
+  setError: (msg: string | null) => void;
 }) {
+  const { t } = useTranslation();
   const [packs, setPacks] = useState<Awaited<ReturnType<typeof loadIconCatalog>>>([]);
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<IconSortMode>('trending');
@@ -577,8 +618,14 @@ function TabIcons({
 
   const selectedButton = buttons.find((b) => b.id === selectedButtonId);
 
-  const applyIcon = (icon: IconCatalogItem) => {
-    if (!selectedButtonId) return;
+  const applyIcon = (icon: IconCatalogItem, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    if (!selectedButtonId) {
+      setError(t('settingsPanel.icons.chooseTargetButton'));
+      return;
+    }
+    setError(null);
     const ref = toPackIconValue(icon.packId, icon.id);
     updateButton(selectedButtonId, { icon: ref });
     trackIconUsage(ref, 1);
@@ -600,11 +647,11 @@ function TabIcons({
       exit={{ opacity: 0, x: -20 }}
       className="flex flex-col gap-4"
     >
-      <Section title="Toolbar">
+      <Section title={t('settingsPanel.icons.toolbar')}>
         <div className="grid grid-cols-2 gap-2">
           <input
             className="settings-input w-full text-[11px]"
-            placeholder="Search icons, tags, apps..."
+            placeholder={t('settingsPanel.icons.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -613,14 +660,14 @@ function TabIcons({
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as IconSortMode)}
           >
-            <option value="trending">Trending</option>
-            <option value="downloads">Most downloaded</option>
-            <option value="newest">Newest</option>
+            <option value="trending">{t('settingsPanel.icons.sortTrending')}</option>
+            <option value="downloads">{t('settingsPanel.icons.sortDownloads')}</option>
+            <option value="newest">{t('settingsPanel.icons.sortNewest')}</option>
           </select>
         </div>
       </Section>
 
-      <Section title="Target Button">
+      <Section title={t('settingsPanel.icons.targetButton')}>
         <select
           className="settings-input w-full text-[11px]"
           value={selectedButtonId}
@@ -628,16 +675,17 @@ function TabIcons({
         >
           {buttons.map((b, index) => (
             <option key={b.id} value={b.id}>
-              {index + 1}. {b.label || 'Empty'}
+              {index + 1}. {b.label || t('common.empty')}
             </option>
           ))}
         </select>
         <p className="text-[10px] text-white/35 mt-1">
-          Applying icon to: {selectedButton?.label || 'Empty button'}
+          {t('settingsPanel.icons.applyingTo')}{' '}
+          {selectedButton?.label || t('common.empty')}
         </p>
       </Section>
 
-      <Section title="Packs">
+      <Section title={t('settingsPanel.icons.packs')}>
         <div className="flex flex-col gap-2">
           {sortedPacks.map((pack) => (
             <div
@@ -648,14 +696,18 @@ function TabIcons({
                 <div>
                   <p className="text-[11px] text-white/75">{pack.name}</p>
                   <p className="text-[10px] text-white/35">
-                    {pack.iconCount} icons • {pack.downloads} downloads
+                    {t('settingsPanel.icons.packMeta', {
+                      count: pack.iconCount,
+                      downloads: pack.downloads,
+                    })}
                   </p>
                 </div>
                 <button
+                  type="button"
                   className="text-[10px] px-2 py-1 rounded-md bg-white/8 hover:bg-white/14 text-white/70 transition-colors"
                   onClick={() => void onInstallPack(pack.id)}
                 >
-                  {pack.installed ? 'Update' : 'Install'}
+                  {pack.installed ? t('common.update') : t('common.install')}
                 </button>
               </div>
             </div>
@@ -663,35 +715,43 @@ function TabIcons({
         </div>
       </Section>
 
-      <Section title="Categories">
+      <Section title={t('settingsPanel.icons.categories')}>
         {loading ? (
-          <p className="text-[11px] text-white/35">Loading icons...</p>
+          <p className="text-[11px] text-white/35">{t('common.loading')}</p>
         ) : (
           Object.entries(grouped).map(([category, list]) => {
-            const open = expandedCategories[category] ?? true;
+            const openCat = expandedCategories[category] ?? true;
             return (
               <div key={category} className="mb-2 rounded-lg border border-white/10">
                 <button
+                  type="button"
                   className="w-full px-2 py-1.5 text-left text-[11px] text-white/65 hover:bg-white/6"
                   onClick={() =>
-                    setExpandedCategories((s) => ({ ...s, [category]: !open }))
+                    setExpandedCategories((s) => ({ ...s, [category]: !openCat }))
                   }
                 >
-                  {open ? '▾' : '▸'} {category} ({list.length})
+                  {openCat ? '▾' : '▸'} {category} ({list.length})
                 </button>
-                {open && (
-                  <div className="grid grid-cols-6 gap-1.5 p-2">
+                {openCat && (
+                  <div className="grid grid-flow-col grid-rows-5 sm:grid-rows-6 auto-cols-fr gap-2 p-2 bg-black/20 overflow-x-auto">
                     {list.map((icon) => (
                       <button
+                        type="button"
                         key={`${icon.packId}-${icon.id}`}
-                        className="h-10 rounded-lg border border-white/10 bg-white/6 hover:bg-white/14 flex items-center justify-center"
-                        onClick={() => applyIcon(icon)}
-                        title={`${icon.name} (${icon.packName})`}
+                        className="min-h-[3.25rem] rounded-xl border border-zinc-600/40 bg-zinc-900/90 hover:bg-zinc-800/95 flex items-center justify-center p-2 shadow-inner"
+                        onClick={(ev) => applyIcon(icon, ev)}
+                        title={t('settingsPanel.icons.applyTitle', {
+                          name: icon.name,
+                          pack: icon.packName,
+                          apply: t('settingsPanel.icons.applyVerb'),
+                        })}
                       >
                         <img
-                          src={icon.iconPath}
+                          src={toDisplaySrc(icon.iconPath)}
                           alt={icon.name}
-                          className="w-6 h-6 object-contain"
+                          className="w-9 h-9 max-w-full max-h-full object-contain [filter:drop-shadow(0_0_1px_rgba(0,0,0,0.9))]"
+                          loading="lazy"
+                          decoding="async"
                           draggable={false}
                         />
                       </button>
@@ -712,15 +772,28 @@ function TabIcons({
 function TabAppearance({
   settingsIconCorner,
   setSettingsIconCorner,
+  windowScalePercent,
+  setWindowScalePercent,
+  themePreset,
+  setThemePreset,
+  multicolorThemes,
+  setMulticolorThemes,
 }: {
   settingsIconCorner: 'tl' | 'tr' | 'bl' | 'br';
   setSettingsIconCorner: (corner: 'tl' | 'tr' | 'bl' | 'br') => void;
+  windowScalePercent: number;
+  setWindowScalePercent: (percent: number) => void;
+  themePreset: ThemePreset;
+  setThemePreset: (theme: ThemePreset) => void;
+  multicolorThemes: BaseThemePreset[];
+  setMulticolorThemes: (themes: BaseThemePreset[]) => void;
 }) {
-  const corners: { id: 'tl' | 'tr' | 'bl' | 'br'; label: string }[] = [
-    { id: 'tl', label: 'Top Left' },
-    { id: 'tr', label: 'Top Right' },
-    { id: 'bl', label: 'Bottom Left' },
-    { id: 'br', label: 'Bottom Right' },
+  const { t } = useTranslation();
+  const corners: { id: 'tl' | 'tr' | 'bl' | 'br'; labelKey: string }[] = [
+    { id: 'tl', labelKey: 'settingsPanel.appearance.corner.tl' },
+    { id: 'tr', labelKey: 'settingsPanel.appearance.corner.tr' },
+    { id: 'bl', labelKey: 'settingsPanel.appearance.corner.bl' },
+    { id: 'br', labelKey: 'settingsPanel.appearance.corner.br' },
   ];
   return (
     <motion.div
@@ -729,10 +802,122 @@ function TabAppearance({
       exit={{ opacity: 0, x: -20 }}
       className="flex flex-col gap-4"
     >
-      <Section title="Settings Icon Position">
+      <Section title={t('settingsPanel.appearance.windowScale')}>
+        <p className="text-white/35 text-[10px] mb-2">
+          {t('settingsPanel.appearance.windowScaleHelp')}
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={100}
+            max={400}
+            step={5}
+            value={windowScalePercent}
+            onChange={(e) => setWindowScalePercent(Number(e.target.value))}
+            className="flex-1 accent-white/40"
+          />
+          <span className="text-white/55 text-[11px] font-mono w-12 text-right">
+            {windowScalePercent}%
+          </span>
+        </div>
+      </Section>
+
+      <Section title={t('settingsPanel.appearance.theme')}>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            key="multicolor"
+            type="button"
+            onClick={() => setThemePreset('multicolor')}
+            className={`rounded-2xl border p-2 text-left transition-all ${
+              themePreset === 'multicolor'
+                ? 'border-white/60 shadow-[0_0_0_1px_var(--theme-ring),0_0_18px_rgba(160,120,255,0.35)]'
+                : 'border-white/15 hover:border-white/35'
+            }`}
+          >
+            <div
+              className="h-20 rounded-xl border border-white/10 relative overflow-hidden"
+              style={{
+                background:
+                  'conic-gradient(from 0deg, #aaff66, #35e9ff, #8f82ff, #ff5dd7, #aaff66)',
+              }}
+            />
+            <p className="mt-2 text-[12px] tracking-[0.14em] text-white/90 uppercase">
+              {t('settingsPanel.themes.multicolor.name')}
+            </p>
+            <p className="text-[10px] text-white/45">
+              {t('settingsPanel.themes.multicolor.subtitle')}
+            </p>
+          </button>
+          {THEME_PRESETS.map((theme) => {
+            const active = theme.id === themePreset;
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => setThemePreset(theme.id)}
+                className={`rounded-2xl border p-2 text-left transition-all ${
+                  active
+                    ? 'border-white/60 shadow-[0_0_0_1px_var(--theme-ring),0_0_18px_rgba(160,120,255,0.35)]'
+                    : 'border-white/15 hover:border-white/35'
+                }`}
+              >
+                <div
+                  className="h-20 rounded-xl border border-white/10 relative overflow-hidden"
+                  style={{ background: theme.cardBg }}
+                >
+                  <span className="absolute left-3 top-3 h-4 w-4 rounded-md bg-white/28" />
+                  <span className="absolute right-4 top-4 h-4 w-4 rounded-md bg-black/15" />
+                  <span className="absolute left-6 bottom-4 h-5 w-5 rounded-md bg-white/20" />
+                  <span className="absolute right-6 bottom-3 h-5 w-5 rounded-md bg-black/18" />
+                </div>
+                <p className="mt-2 text-[12px] tracking-[0.14em] text-white/90 uppercase">
+                  {t(`settingsPanel.themes.${theme.id}.name`)}
+                </p>
+                <p className="text-[10px] text-white/45">
+                  {t(`settingsPanel.themes.${theme.id}.subtitle`)}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+        {themePreset === 'multicolor' && (
+          <div className="mt-3">
+            <p className="text-[10px] text-white/45 mb-2">
+              {t('settingsPanel.appearance.multicolorMixHint')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {THEME_PRESETS.map((preset) => {
+                const selected = multicolorThemes.includes(preset.id);
+                return (
+                  <button
+                    key={`mix-${preset.id}`}
+                    type="button"
+                    onClick={() => {
+                      const next = selected
+                        ? multicolorThemes.filter((id) => id !== preset.id)
+                        : [...multicolorThemes, preset.id];
+                      setMulticolorThemes(next);
+                    }}
+                    className={`px-2 py-1 rounded-lg border text-[10px] ${
+                      selected
+                        ? 'border-white/45 bg-white/15 text-white/90'
+                        : 'border-white/15 bg-white/6 text-white/60 hover:border-white/30'
+                    }`}
+                  >
+                    {t(`settingsPanel.themes.${preset.id}.name`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Section>
+
+      <Section title={t('settingsPanel.appearance.settingsIconCorner')}>
         <div className="grid grid-cols-2 gap-2">
           {corners.map((corner) => (
             <button
+              type="button"
               key={corner.id}
               className={`text-[11px] px-3 py-2 rounded-lg border transition-colors ${
                 settingsIconCorner === corner.id
@@ -741,14 +926,17 @@ function TabAppearance({
               }`}
               onClick={() => setSettingsIconCorner(corner.id)}
             >
-              {corner.label}
+              {t(corner.labelKey)}
             </button>
           ))}
         </div>
       </Section>
-      <Section title="Pages Navigation">
+      <Section title={t('settingsPanel.appearance.pagesNavTitle')}>
         <p className="text-white/35 text-[11px]">
-          Use <span className="font-mono">Arrow Left/Right</span> or mouse wheel over the grid to move between pages when you have more than 9 buttons.
+          <Trans
+            i18nKey="settingsPanel.appearance.pagesNav"
+            components={{ mono: <span className="font-mono" /> }}
+          />
         </p>
       </Section>
     </motion.div>
@@ -776,6 +964,7 @@ function TabShortcuts({
   fadeOutDuration: number;
   setFadeOutDuration: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -783,35 +972,35 @@ function TabShortcuts({
       exit={{ opacity: 0, x: -20 }}
       className="flex flex-col gap-4"
     >
-      <Section title="Toggle Shortcut">
+      <Section title={t('settingsPanel.shortcuts.toggleShortcut')}>
         <p className="text-white/40 text-[11px] mb-2">
-          Ctrl + Alt +{' '}
+          {t('settingsPanel.shortcuts.ctrlAlt')}{' '}
           <span className="text-white/70 font-mono bg-white/10 px-1.5 py-0.5 rounded">
             {shortcutKey}
           </span>
         </p>
         <input
           className="settings-input w-full font-mono"
-          placeholder="Key (e.g. P, A, F1)"
+          placeholder={t('settingsPanel.shortcuts.keyPlaceholder')}
           value={shortcutKey}
           onChange={(e) => setShortcutKey(e.target.value)}
         />
       </Section>
 
-      <Section title="Numpad Shortcuts">
+      <Section title={t('settingsPanel.shortcuts.numpad')}>
         <div className="flex items-center justify-between gap-3">
           <span className="text-white/50 text-[11px]">
-            Ctrl+Alt+Numpad1-9 for silent execution (3x3 grid only)
+            {t('settingsPanel.shortcuts.numpadHint')}
           </span>
           <IOSSwitch
             checked={numpadShortcuts}
             onChange={setNumpadShortcuts}
-            ariaLabel="Toggle numpad shortcuts"
+            ariaLabel={t('settingsPanel.shortcuts.numpadAria')}
           />
         </div>
       </Section>
 
-      <Section title="Inactivity Timeout">
+      <Section title={t('settingsPanel.shortcuts.inactivity')}>
         <div className="flex items-center gap-3">
           <input
             type="range"
@@ -827,7 +1016,7 @@ function TabShortcuts({
         </div>
       </Section>
 
-      <Section title="Fade-out Duration">
+      <Section title={t('settingsPanel.shortcuts.fadeOut')}>
         <div className="flex items-center gap-3">
           <input
             type="range"
@@ -869,6 +1058,7 @@ function TabSounds({
   setSoundTestSound: (v: 'tap' | 'success' | 'error') => void;
   previewSound: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -876,15 +1066,15 @@ function TabSounds({
       exit={{ opacity: 0, x: -20 }}
       className="flex flex-col gap-4"
     >
-      <Section title="Sound Effects">
+      <Section title={t('settingsPanel.sounds.title')}>
         <div className="flex items-center justify-between gap-3 mb-2">
           <span className="text-white/50 text-[11px]">
-            Enable modern, low-frequency UI sounds
+            {t('settingsPanel.sounds.enableHint')}
           </span>
           <IOSSwitch
             checked={soundEnabled}
             onChange={setSoundEnabled}
-            ariaLabel="Toggle sound effects"
+            ariaLabel={t('settingsPanel.sounds.ariaEffects')}
           />
         </div>
         <div className="flex items-center gap-3">
@@ -915,10 +1105,10 @@ function TabSounds({
               )
             }
           >
-            <option value="stereo">Stereo</option>
-            <option value="left">Left only</option>
-            <option value="right">Right only</option>
-            <option value="mono">Mono</option>
+            <option value="stereo">{t('settingsPanel.sounds.stereo')}</option>
+            <option value="left">{t('settingsPanel.sounds.leftOnly')}</option>
+            <option value="right">{t('settingsPanel.sounds.rightOnly')}</option>
+            <option value="mono">{t('settingsPanel.sounds.mono')}</option>
           </select>
           <select
             className="settings-input w-full text-[11px]"
@@ -927,9 +1117,9 @@ function TabSounds({
               setSoundTestSound(e.target.value as 'tap' | 'success' | 'error')
             }
           >
-            <option value="tap">Test: Tap</option>
-            <option value="success">Test: Success</option>
-            <option value="error">Test: Error</option>
+            <option value="tap">{t('settingsPanel.sounds.testTap')}</option>
+            <option value="success">{t('settingsPanel.sounds.testSuccess')}</option>
+            <option value="error">{t('settingsPanel.sounds.testError')}</option>
           </select>
         </div>
         <button
@@ -940,7 +1130,7 @@ function TabSounds({
             });
           }}
         >
-          Play selected sound
+          {t('settingsPanel.sounds.playPreview')}
         </button>
       </Section>
     </motion.div>
@@ -958,6 +1148,7 @@ function TabHistory({
   clearRecentCommands: () => void;
   resetDefaults: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -965,7 +1156,7 @@ function TabHistory({
       exit={{ opacity: 0, x: -20 }}
     >
       {recentCommands.length === 0 ? (
-        <p className="text-white/25 text-[11px]">No recent commands yet.</p>
+        <p className="text-white/25 text-[11px]">{t('settingsPanel.history.empty')}</p>
       ) : (
         <div className="flex flex-col gap-1">
           {recentCommands.map((cmd, i) => (
@@ -983,7 +1174,7 @@ function TabHistory({
             className="text-[10px] text-white/25 hover:text-white/50 mt-2 self-start"
             onClick={clearRecentCommands}
           >
-            Clear history
+            {t('settingsPanel.history.clearHistory')}
           </button>
         </div>
       )}
@@ -993,9 +1184,56 @@ function TabHistory({
           className="text-[11px] text-red-400/50 hover:text-red-400/80 transition-colors"
           onClick={resetDefaults}
         >
-          Reset everything to defaults
+          {t('common.reset')}
         </button>
       </div>
+    </motion.div>
+  );
+}
+
+/* ── Tab: Language ─────────────────────────────────────────────────────── */
+
+function TabLanguage({
+  language,
+  setLanguage,
+}: {
+  language: AppLanguage;
+  setLanguage: (lang: AppLanguage) => void;
+}) {
+  const { t } = useTranslation();
+  const langs: { id: AppLanguage; label: string }[] = [
+    { id: 'en', label: t('language.en') },
+    { id: 'es', label: t('language.es') },
+    { id: 'ca', label: t('language.ca') },
+    { id: 'ja', label: t('language.ja') },
+    { id: 'zh', label: t('language.zh') },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="flex flex-col gap-4"
+    >
+      <Section title={t('language.select')}>
+        <div className="grid grid-cols-2 gap-2">
+          {langs.map((lang) => (
+            <button
+              type="button"
+              key={lang.id}
+              className={`text-[11px] px-3 py-2 rounded-lg border transition-colors ${
+                language === lang.id
+                  ? 'bg-white/16 border-white/35 text-white/85'
+                  : 'bg-white/6 border-white/12 text-white/55 hover:bg-white/10'
+              }`}
+              onClick={() => setLanguage(lang.id)}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </Section>
     </motion.div>
   );
 }
@@ -1068,3 +1306,4 @@ function IOSSwitch({
     </motion.button>
   );
 }
+

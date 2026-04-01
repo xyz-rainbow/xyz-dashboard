@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata for Flatpak / Flathub / app centers.
+  Before publishing: add PNG screenshots (Flathub prefers 16:9, e.g. 1920×1080) and verify <releases>.
+-->
+<component type="desktop-application">
+  <id>com.cloud-xyz.xyz-dashboard</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>XYZ Dashboard</name>
+  <summary>Floating macro-pad launcher for commands and URLs</summary>
+  <summary xml:lang="es">Lanzador flotante tipo macro-pad para comandos y URLs</summary>
+
+  <description>
+    <p>
+      XYZ Dashboard is a compact desktop launcher by Rainbow Technology. It behaves like a macro pad:
+      assign shell commands and web URLs to a customizable grid, navigate pages, and open everything with
+      a global shortcut while the window stays unobtrusive.
+    </p>
+    <ul>
+      <li>Icon packs in Settings with search, categories, and usage-based rankings</li>
+      <li>Themes: Lime, Cyber, Aurora, Darkmoon, plus animated multicolor borders</li>
+      <li>Sound feedback with resilient playback on Linux / GNOME-style stacks</li>
+      <li>Per-page grid sizes, window scaling (up to 400%), tray menu with recent commands</li>
+    </ul>
+  </description>
+
+  <description xml:lang="es">
+    <p>
+      XYZ Dashboard es un lanzador de escritorio compacto de Rainbow Technology. Funciona como una macro-pad:
+      asigna comandos y URLs a una cuadrícula, pagina entre diseños y ábrelo con un atajo global.
+    </p>
+    <ul>
+      <li>Packs de iconos con búsqueda, categorías y orden por uso</li>
+      <li>Temas Lime, Cyber, Aurora, Darkmoon y modo multicolor animado</li>
+      <li>Sonidos fiables en entornos Linux / GNOME</li>
+      <li>Tamaños de grid por página, escala de ventana, bandeja con comandos recientes</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.cloud-xyz.xyz-dashboard.desktop</launchable>
+
+  <url type="homepage">https://github.com/xyz-rainbow/xyz-dashboard</url>
+  <url type="bugtracker">https://github.com/xyz-rainbow/xyz-dashboard/issues</url>
+
+  <developer_name>Rainbow Technology</developer_name>
+  <project_group>Rainbow Technology</project_group>
+
+  <categories>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>launcher</keyword>
+    <keyword>macro</keyword>
+    <keyword>dashboard</keyword>
+    <keyword>tauri</keyword>
+    <keyword>productivity</keyword>
+  </keywords>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/xyz-rainbow/xyz-dashboard/master/assets/app-preview.svg</image>
+      <caption>Main glassmorphic grid</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/xyz-rainbow/xyz-dashboard/master/assets/themes-preview.svg</image>
+      <caption>Theme presets preview</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.1.1" date="2026-04-01"/>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>

@@ -1,5 +1,7 @@
 export type Corner = 'tl' | 'tr' | 'bl' | 'br';
 export type GridSize = [number, number];
+export type ThemePreset = 'lime' | 'cyber' | 'aurora' | 'darkmoon' | 'multicolor';
+export type AppLanguage = 'en' | 'es' | 'ca' | 'ja' | 'zh';
 
 export interface ButtonConfig {
   id: string;
@@ -9,6 +11,7 @@ export interface ButtonConfig {
 }
 
 export interface AppConfig {
+  language: AppLanguage;
   gridSize: GridSize;
   pageGridSizes: GridSize[];
   buttons: ButtonConfig[];
@@ -25,6 +28,10 @@ export interface AppConfig {
   installedPacks: Record<string, { installedAt: string }>;
   lastIconPackSyncAt: string;
   iconUsageStats: Record<string, number>;
+  /** 100 = default window size; up to 400 = 4× base (400×400 logical). */
+  windowScalePercent: number;
+  themePreset: ThemePreset;
+  multicolorThemes: Exclude<ThemePreset, 'multicolor'>[];
 }
 
 export const GRID_SIZES: GridSize[] = [
@@ -36,6 +43,7 @@ export const GRID_SIZES: GridSize[] = [
 ];
 
 export const DEFAULT_CONFIG: AppConfig = {
+  language: 'en',
   gridSize: [2, 2],
   pageGridSizes: [[2, 2]],
   buttons: Array.from({ length: 4 }, (_, i) => ({
@@ -57,4 +65,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   installedPacks: {},
   lastIconPackSyncAt: '',
   iconUsageStats: {},
+  windowScalePercent: 100,
+  themePreset: 'darkmoon',
+  multicolorThemes: ['lime', 'cyber', 'aurora', 'darkmoon'],
 };

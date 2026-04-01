@@ -1,9 +1,10 @@
 [package]
 name = "xyz-dashboard"
 version = "0.1.1"
-description = "Floating macro-pad launcher"
-authors = ["you"]
+description = "Floating macro-pad launcher for commands and URLs (Rainbow Technology)."
+authors = ["Rainbow Technology"]
 edition = "2021"
+license = "MIT"
 
 [lib]
 name = "xyz_dashboard_lib"

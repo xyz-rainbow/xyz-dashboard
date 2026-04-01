@@ -668,6 +668,9 @@ async fn load_config(app: tauri::AppHandle) -> Result<serde_json::Value, String>
         "installedPacks": store.get("installedPacks").unwrap_or(serde_json::json!({})),
         "lastIconPackSyncAt": store.get("lastIconPackSyncAt").unwrap_or(serde_json::json!("")),
         "iconUsageStats": store.get("iconUsageStats").unwrap_or(serde_json::json!({})),
+        "windowScalePercent": store.get("windowScalePercent").unwrap_or(serde_json::json!(100)),
+        "themePreset": store.get("themePreset").unwrap_or(serde_json::json!("darkmoon")),
+        "multicolorThemes": store.get("multicolorThemes").unwrap_or(serde_json::json!(["lime", "cyber", "aurora", "darkmoon"])),
     });
 
     Ok(config)
@@ -684,7 +687,34 @@ async fn save_config(app: tauri::AppHandle, config: serde_json::Value) -> Result
     }
 
     store.save().map_err(|e| e.to_string())?;
+
+    if let Some(pct) = config
+        .get("windowScalePercent")
+        .and_then(|v| v.as_u64())
+        .map(|v| v as u32)
+    {
+        resize_main_window_for_scale(&app, pct)?;
+    }
+
     Ok(())
+}
+
+const BASE_WINDOW_LOGICAL: f64 = 400.0;
+
+fn resize_main_window_for_scale(app: &tauri::AppHandle, percent: u32) -> Result<(), String> {
+    let pct = percent.clamp(100, 400) as f64;
+    let side = (BASE_WINDOW_LOGICAL * pct / 100.0).round();
+    let side = side.clamp(200.0, 2400.0);
+    if let Some(win) = app.get_webview_window("main") {
+        win.set_size(tauri::LogicalSize::new(side, side))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn apply_window_scale(app: tauri::AppHandle, percent: u64) -> Result<(), String> {
+    resize_main_window_for_scale(&app, (percent as u32).clamp(100, 400))
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -946,7 +976,21 @@ pub fn run() {
                 if numpad && gs == [3, 3] {
                     register_numpad_shortcuts(&app_handle, &btns);
                 }
+
+                let scale_pct = store
+                    .get("windowScalePercent")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(100) as u32;
+                let _ = resize_main_window_for_scale(&app_handle, scale_pct);
             });
+
+            let scale_pct = app
+                .store("config.json")
+                .ok()
+                .and_then(|s| s.get("windowScalePercent"))
+                .and_then(|v| v.as_u64())
+                .unwrap_or(100) as u32;
+            let _ = resize_main_window_for_scale(app.handle(), scale_pct);
 
             Ok(())
         })
@@ -970,6 +1014,7 @@ pub fn run() {
             resolve_pack_icon_path,
             load_config,
             save_config,
+            apply_window_scale,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

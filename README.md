@@ -1,7 +1,11 @@
 # XYZ Dashboard
 
 <p align="center">
-  <img src="./assets/banner-main.svg" alt="XYZ Dashboard banner principal" width="100%" />
+  <img src="./assets/banner-main.svg" alt="XYZ Dashboard main banner" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./assets/banner-features.svg" alt="XYZ Dashboard features banner" width="100%" />
 </p>
 
 <p align="center">
@@ -19,180 +23,189 @@
   </a>
 </p>
 
-Launcher tipo macro-pad flotante construido con **Tauri + React + TypeScript** para ejecutar comandos y abrir URLs rapidamente.
-
 Floating macro-pad launcher built with **Tauri + React + TypeScript** to run commands and open URLs quickly.
 
+## App Preview
+
 <p align="center">
-  <img src="./assets/banner-features.svg" alt="XYZ Dashboard banner de funciones" width="100%" />
+  <img src="./assets/app-preview.svg" alt="Preview of the XYZ Dashboard app interface" width="100%" />
+</p>
+
+### 3x3 With Last Slot Empty
+
+<p align="center">
+  <img src="./assets/app-preview-3x3-last-empty.svg" alt="XYZ Dashboard 3x3 preview with icons set and last slot empty" width="100%" />
+</p>
+
+### Themes Preview
+
+<p align="center">
+  <img src="./assets/themes-preview.svg" alt="Preview of Lime, Cyber, Aurora and Darkmoon themes" width="100%" />
 </p>
 
 ## Table of Contents
 
-- [Que es / What is](#que-es--what-is)
-- [Funciones / Features](#funciones--features)
-- [Seguridad / Security](#seguridad--security)
-- [Stack](#stack)
-- [Instalacion y desarrollo / Setup](#instalacion-y-desarrollo--setup)
-- [Build y releases](#build-y-releases)
-- [Assets de documentacion](#assets-de-documentacion)
-- [Docs extra](#docs-extra)
+- [What Is It](#what-is-it)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Install and Run](#install-and-run)
+- [Build and Releases](#build-and-releases)
+- [Repository Layout](#repository-layout)
+- [Icon Packs Catalog](#icon-packs-catalog)
+- [Documentation Assets (SVG)](#documentation-assets-svg)
 - [Contributing](#contributing)
 - [Roadmap](#roadmap)
 
-## Que es / What is
+## What Is It
 
-**ES:** XYZ Dashboard es un panel de accesos rapidos para centralizar tareas frecuentes (scripts, comandos, herramientas y enlaces) en una interfaz flotante.
+XYZ Dashboard is a floating quick-access panel that centralizes frequent tasks:
 
-**EN:** XYZ Dashboard is a quick-access panel that centralizes frequent tasks (scripts, commands, tools, and links) in a floating UI.
+- shell commands
+- scripts and executables
+- URLs
+- custom iconized shortcuts
 
-## Funciones / Features
+It is designed for users who want a compact, always-on-top launcher workflow.
 
-**ES**
+## Features
 
-- Define botones con comando, URL e icono.
-- Abre/cierra el panel con atajo global.
-- Organiza accesos para tareas frecuentes (desarrollo, sistema, herramientas, scripts).
-- Mantiene historial de acciones para repetir tareas rapido.
-- Soporta iconos SVG de libreria o personalizados.
-- Incluye selector de scripts/ejecutables y sugerencias automaticas.
-- Incluye catalogo de icon packs por categorias con busqueda y filtros (trending, mas descargados, nuevos).
+- Configurable button grid with per-page sizing.
+- Global shortcut to show/hide the dashboard.
+- Command history shortcuts in tray menu.
+- Script/executable picker with command and icon suggestion.
+- Sound effects system with volume/output/test controls.
+- Theme presets in Settings: **Lime**, **Cyber**, **Aurora**, **Darkmoon**.
+- Multicolor theme mode: combine multiple presets and rotate a slow animated gradient around app borders.
+- Settings UX refinements: fixed tabs + smooth internal scroll.
+- Settings close/tab transitions hardened to avoid ghosting artifacts.
+- Settings scroll reliability fix: proper internal tab scrolling with flex `min-h-0` constraints.
+- Uniform visual scaling: full button UI (icon + label + spacing) grows with app scale.
+- Linux GNOME audio hardening: layered playback fallbacks for better Debian/WebKit compatibility.
+- Icon packs catalog with:
+  - install/update actions
+  - category accordion
+  - search
+  - sort by trending/downloads/newest
+- Supports three icon sources:
+  - built-in library (`lib:<id>`)
+  - catalog refs (`pack:<pack-id>:<icon-id>`)
+  - absolute file paths (resolved through Tauri file URL conversion)
 
-**EN**
+## Latest Local Build Notes
 
-- Define buttons with command, URL, and icon.
-- Toggle the dashboard with a global shortcut.
-- Organize shortcuts for daily workflows.
-- Keep command history for fast repetition.
-- Support built-in and custom SVG icons.
-- Provide script/executable picker with automatic suggestions.
-- Include an icon pack catalog by category with search and sort filters.
+- New app preview SVGs in README:
+  - full app preview
+  - 3x3 preview with last slot intentionally empty
+  - theme cards preview
+- New theme selector cards in Settings -> Appearance.
+- New **Multicolor** mode in Settings -> Appearance with multi-select theme blending.
+- Icon catalog grid orientation updated for top-to-bottom visual flow.
+- Settings content area keeps tabs fixed and scrolls internally with smooth behavior.
+- Buttons now scale uniformly when increasing app size percentage.
+- Audio playback fallback chain improved for GNOME Debian environments.
 
-## Seguridad / Security
+## Changelog (Unreleased)
 
-**ES:** La ejecucion de comandos esta endurecida para reducir riesgos comunes.
+### Added
 
-**EN:** Command execution is hardened to reduce common shell-related risks.
+- Theme presets in Settings: **Lime**, **Cyber**, **Aurora**, **Darkmoon**.
+- **Multicolor** theme mode with multi-select preset blending.
+- Rotating conic-gradient border animation for multicolor mode.
+- App preview SVGs in README:
+  - full app preview
+  - 3x3 layout preview (last slot empty)
+  - themes preview
 
-- Sin ruta de ejecucion `sh -c`.
-- Parseo explicito de `program + args`.
-- Bloqueo de caracteres de control de shell: `;`, `|`, `&`, `$`, `` ` ``, `<`, `>`, saltos de linea.
-- El programa debe ser:
-  - Ruta absoluta, o
-  - Uno de los permitidos: `python`, `python3`, `bash`, `node`, `npm`, `pnpm`, `yarn`, `firefox`, `xdg-open`, `code`.
+### Changed
 
-## Stack
+- Icon catalog visual flow in Settings updated to top-to-bottom grid orientation.
+- Button visuals now scale uniformly with app size percentage (icon, label, spacing).
+- README expanded with current feature set and visual previews.
 
-- **Frontend**: React + TypeScript
-- **Desktop shell**: Tauri (Rust)
-- **Package manager**: pnpm
+### Fixed
 
-## Instalacion y desarrollo / Setup
+- Settings panel ghost transition artifacts reduced by simplifying transition flow.
+- Internal Settings scrolling in tabs stabilized using proper flex/min-height constraints.
+- Audio playback reliability improved on GNOME Debian with layered fallbacks.
 
-### Requisitos
+## Requirements
 
-- Node.js
+- Node.js (recommended modern LTS)
 - pnpm
 - Rust toolchain
-- Dependencias de Tauri para tu sistema operativo
+- OS dependencies required by Tauri for your platform
 
-### Instalacion (npm/pnpm)
+Project versions:
+
+- App version: `0.1.1`
+- Frontend package version: `0.1.1`
+- Tauri package version: `0.1.1`
+
+## Install and Run
+
+### Install dependencies
 
 ```bash
-# recomendado
 pnpm install
-
-# alternativa npm
-npm install
 ```
 
-### Ejecutar en desarrollo
+### Run in development
 
 ```bash
-pnpm install
 pnpm tauri dev
 ```
 
-```bash
-# alternativa npm
-npm run tauri dev
-```
-
-### Build de frontend
+### Frontend build
 
 ```bash
 pnpm build
 ```
 
-### Verificacion de backend (Rust)
+### Rust backend check
 
 ```bash
 cd src-tauri
 cargo check
 ```
 
-## Build de app y releases
+## Build and Releases
 
-Objetivo: generar paquetes para Linux, macOS y Windows.
-
-Flujo recomendado:
-
-1. Generar build de Tauri.
-2. Copiar artefactos resultantes a `releases/`.
-3. Versionar solo codigo y assets (no los binarios de release).
-
-### Build local de app
+### Local app build
 
 ```bash
 pnpm tauri build
 ```
 
+### Release workflow
+
+Release automation is configured in `.github/workflows/release.yml` and is triggered by pushing tags matching `v*`.
+
+Official artifacts:
+
+- Linux: `.AppImage` and `.deb`
+- macOS: `.dmg`
+- Windows: `.exe` (NSIS)
+
+Create and push a tag:
+
 ```bash
-# alternativa npm
-npm run tauri build
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
-### Politica de artefactos oficiales (release automatizada)
+## Repository Layout
 
-- **Linux**: `.AppImage` + `.deb`
-- **macOS**: `.dmg`
-- **Windows**: `.exe` (NSIS)
+```text
+src/                     # React UI, state, hooks, audio, icon catalog
+src-tauri/               # Rust backend (commands, shortcuts, window, packaging)
+assets/                  # Versioned visual assets + icon packs source
+assets/icon-packs/       # Catalog index + packs metadata + svg/png icons
+.github/workflows/       # CI/CD workflows (release)
+```
 
-Esta politica ya esta configurada en `.github/workflows/release.yml` para las proximas versiones etiquetadas (`v*`).
+## Icon Packs Catalog
 
-### Artefactos opcionales
-
-Si en el futuro se necesitan, se pueden habilitar tambien:
-
-- Linux: `.rpm`
-- macOS: `.app.tar.gz`
-- Windows: `.msi`
-
-### Releases GitHub
-
-1. Crear tag de version:
-   ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
-   ```
-2. Publicar release y adjuntar artefactos (`.deb`, `.AppImage`, `.dmg`, `.msi`/`.exe`).
-
-Nota: no todos los targets se pueden compilar nativamente en cualquier SO; para publicar todos los formatos se recomienda CI multi-OS (GitHub Actions).
-
-## Assets de documentacion
-
-La carpeta `assets/` contiene recursos visuales versionados (banners, iconos SVG para README, etc.).
-
-Ejemplos actuales:
-
-- `assets/banner-main.svg`
-- `assets/banner-features.svg`
-- `assets/error.svg`
-- `assets/settings.svg`
-
-## Icon packs (catalogo)
-
-El sistema de iconos descargables vive en `assets/icon-packs/` y se organiza asi:
+Icon packs live in `assets/icon-packs/`:
 
 ```text
 assets/icon-packs/
@@ -204,61 +217,65 @@ assets/icon-packs/
         *.svg|*.png
 ```
 
-### Archivos y campos
+Core files:
 
-- `index.json`: indice global de packs y metricas para filtros.
-  - `packs[].id`, `name`, `description`
-  - `packs[].categories`, `tags`
-  - `packs[].downloads`, `trendingScore`, `createdAt`
-  - `packs[].coverIcon`, `iconCount`
-- `pack.json`: detalle de un pack.
-  - `icons[].id`, `name`, `category`
-  - `icons[].relativePath`
-  - `icons[].tags`, `appHints`
-  - `icons[].downloads`, `createdAt`
+- `index.json`: global index and ranking metadata (`downloads`, `trendingScore`, `createdAt`, `iconCount`, etc.)
+- `pack.json`: per-pack icon list (`id`, `relativePath`, `tags`, `appHints`, etc.)
 
-### Como agregar un nuevo pack
+Usage flow in app:
 
-1. Crear carpeta `assets/icon-packs/packs/<nuevo-pack>/`.
-2. Agregar `pack.json` con metadata e iconos.
-3. Guardar SVG/PNG en `assets/icon-packs/packs/<nuevo-pack>/icons/`.
-4. Registrar el pack en `assets/icon-packs/index.json`.
-5. Ajustar metricas (`downloads`, `trendingScore`) segun release.
+1. Open **Settings -> Icons**
+2. Install or update a pack
+3. Pick target button
+4. Apply icon
+5. Config stores reference as `pack:<pack-id>:<icon-id>`
 
-### Como se usa en la app
+## Documentation Assets (SVG)
 
-- En **Settings -> Icons** puedes:
-  - Buscar iconos por texto/tags/app hints.
-  - Ordenar por `Trending`, `Most downloaded` o `Newest`.
-  - Expandir categorias (acordeon) y aplicar iconos a un boton objetivo.
-  - Instalar/actualizar packs (estado persistido en config local).
-- Los iconos del catalogo se guardan en config como `pack:<pack-id>:<icon-id>`; la app resuelve la ruta del archivo al mostrarlos. Las rutas absolutas y los `lib:<id>` siguen igual.
+This repository includes multiple SVG assets referenced by this README and by the app:
 
-## Docs extra
+- `assets/banner-main.svg`
+- `assets/banner-features.svg`
+- `assets/app-preview.svg`
+- `assets/app-preview-3x3-last-empty.svg`
+- `assets/themes-preview.svg`
+- `assets/error.svg`
+- `assets/settings.svg`
+- `assets/icon-packs/packs/dev-tools/icons/terminal.svg`
+- `assets/icon-packs/packs/apps-brands/icons/browser.svg`
+- `assets/icon-packs/packs/system-controls/icons/power.svg`
+- `assets/icon-packs/packs/media-social/icons/music.svg`
 
-- Guia adicional: `docs.md`
+Preview row:
+
+<p>
+  <img src="./assets/settings.svg" alt="Settings icon" width="72" />
+  <img src="./assets/error.svg" alt="Error icon" width="72" />
+  <img src="./assets/icon-packs/packs/dev-tools/icons/terminal.svg" alt="Terminal icon" width="72" />
+  <img src="./assets/icon-packs/packs/apps-brands/icons/browser.svg" alt="Browser icon" width="72" />
+  <img src="./assets/icon-packs/packs/system-controls/icons/power.svg" alt="Power icon" width="72" />
+  <img src="./assets/icon-packs/packs/media-social/icons/music.svg" alt="Music icon" width="72" />
+</p>
 
 ## Contributing
 
-Contribuciones son bienvenidas. Para mantener un flujo simple y consistente:
+1. Create a branch from your local clone.
+2. Keep changes scoped and small when possible.
+3. Run checks before opening a PR:
+   - `pnpm build`
+   - `pnpm test`
+   - `cd src-tauri && cargo check`
+4. In the PR description, include:
+   - problem statement
+   - implemented solution
+   - verification steps
 
-1. Haz un fork o crea una rama nueva desde tu copia local.
-2. Instala dependencias y valida que el proyecto corre en local.
-3. Implementa cambios pequenos y enfocados.
-4. Verifica build y checks antes de abrir tu PR.
-5. Describe en la PR el problema, la solucion y como probarla.
+## License
 
-Checklist recomendado antes de abrir PR:
-
-- `pnpm install`
-- `pnpm build`
-- `pnpm tauri dev` (smoke test manual)
-- `cd src-tauri && cargo check`
-
-Si agregas assets para documentacion (por ejemplo SVG), guardalos en `assets/`.
+[MIT](LICENSE) — Copyright © Rainbow Technology.
 
 ## Roadmap
 
-- Perfiles de layouts exportables/importables.
-- Marketplace local de atajos preconfigurados.
-- Temas visuales y editor de iconos integrado.
+- Import/export layout profiles.
+- Local shortcut presets marketplace.
+- More visual themes and icon tooling.

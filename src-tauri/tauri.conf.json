@@ -18,8 +18,8 @@
         "height": 400,
         "minWidth": 200,
         "minHeight": 200,
-        "maxWidth": 800,
-        "maxHeight": 800,
+        "maxWidth": 2400,
+        "maxHeight": 2400,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
@@ -32,7 +32,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data:; media-src 'self' asset: data:; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420; font-src 'self' data:;",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: blob: http://asset.localhost https://asset.localhost http://ipc.localhost https://ipc.localhost; media-src 'self' asset: data: blob:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost http://localhost:1420 ws://localhost:1420 http://asset.localhost https://asset.localhost; font-src 'self' data:;",
       "assetProtocol": {
         "enable": true,
         "scope": ["$APPDATA/**"]
@@ -42,6 +42,14 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Utility",
+    "publisher": "Rainbow Technology",
+    "copyright": "Copyright © Rainbow Technology",
+    "homepage": "https://github.com/xyz-rainbow/xyz-dashboard",
+    "license": "MIT",
+    "licenseFile": "../LICENSE",
+    "shortDescription": "Floating macro-pad launcher for commands and URLs — Rainbow Technology.",
+    "longDescription": "XYZ Dashboard is a compact, always-available desktop launcher that behaves like a macro pad: assign shell commands and URLs to a glassmorphic grid, page through layouts, and summon the window with a global shortcut.\n\nHighlights: downloadable icon packs and usage-aware catalog sorting, theme presets (Lime, Cyber, Aurora, Darkmoon) plus animated multicolor borders, sound feedback tuned for reliability on Linux desktop environments, per-page grid sizing, window scaling up to 400%, tray menu with recent commands, and executable picker flows with optional icon overwrite.\n\nBranding icon: gradient squircle mark by Rainbow Technology. Package metadata follows the Debian control format for .deb bundles and can be reused for storefront listings and AppStream metadata.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -49,6 +57,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "linux": {
+      "deb": {
+        "section": "utils",
+        "depends": [],
+        "recommends": ["xdg-utils"]
+      }
+    },
     "resources": {
       "../assets/icon-packs": "icon-packs"
     }

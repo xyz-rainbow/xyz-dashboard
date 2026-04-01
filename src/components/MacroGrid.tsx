@@ -1,3 +1,15 @@
+/**
+ *  __   __  ________
+ *  \ \ / / |___  __/
+ *   \ V /      / /   
+ *    > <      / /    
+ *   / ^ \    / /___  
+ *  /_/ \_\  /______/ 
+ * 
+ * Cuadrícula Principal (Grid) - XYZ Dashboard
+ * #xyz-rainbow #xyz-rainbowtechnology #rainbowtechnology.xyz
+ */
+
 import { useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store';
@@ -6,15 +18,18 @@ import GridButton from './GridButton';
 export default function MacroGrid() {
   const { gridSize, pageGridSizes, buttons, currentPage, nextPage, prevPage, setError } =
     useStore();
-  const [rows, cols] = gridSize;
   const totalPages = Math.max(1, pageGridSizes.length);
   const clampedPage = Math.min(currentPage, totalPages - 1);
+  // Dimensions and slice length must match this page’s entry in pageGridSizes (not legacy gridSize alone).
+  const [rows, cols] = pageGridSizes[clampedPage] ?? gridSize;
+  const pageSize = rows * cols;
+
   const start = pageGridSizes
     .slice(0, clampedPage)
     .reduce((acc, [r, c]) => acc + r * c, 0);
-  const pageSize = rows * cols;
   const pageButtons = buttons.slice(start, start + pageSize);
 
+  // Navegación mediante la rueda del ratón
   const handleWheel = useCallback(
     (event: React.WheelEvent<HTMLDivElement>) => {
       if (event.deltaY > 0) nextPage();
@@ -24,6 +39,7 @@ export default function MacroGrid() {
   );
 
   useEffect(() => {
+    // Navegación mediante flechas del teclado
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowRight') {
         event.preventDefault();
