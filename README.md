@@ -4,9 +4,6 @@
   <img src="./assets/banner-main.svg" alt="XYZ Dashboard main banner" width="100%" />
 </p>
 
-<p align="center">
-  <img src="./assets/banner-features.svg" alt="XYZ Dashboard features banner" width="100%" />
-</p>
 
 <p align="center">
   <a href="https://tauri.app/">
@@ -61,6 +58,10 @@ XYZ Dashboard is a floating quick-access panel that centralizes frequent tasks:
 - custom iconized shortcuts
 
 It is designed for users who want a compact, always-on-top launcher workflow.
+
+<p align="center">
+  <img src="./assets/banner-features.svg" alt="XYZ Dashboard features banner" width="100%" />
+</p>
 
 ## Features
 
