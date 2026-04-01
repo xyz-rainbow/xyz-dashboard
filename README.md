@@ -27,13 +27,6 @@ Floating macro-pad launcher built with **Tauri + React + TypeScript** to run com
   <img src="./assets/app-preview.svg" alt="Preview of the XYZ Dashboard app interface" width="100%" />
 </p>
 
-### 3x3 With Last Slot Empty
-
-<p align="center">
-  <img src="./assets/app-preview-3x3-last-empty.svg" alt="XYZ Dashboard 3x3 preview with icons set and last slot empty" width="100%" />
-</p>
-
-
 ## Table of Contents
 
 - [What Is It](#what-is-it)
@@ -109,6 +102,14 @@ It is designed for users who want a compact, always-on-top launcher workflow.
   - librería integrada (`lib:<id>`)
   - catálogo (`pack:<pack-id>:<icon-id>`)
   - rutas absolutas (resolución vía URL de archivo de Tauri)
+
+### 3x3 With Last Slot Empty
+
+<p align="center">
+  <img src="./assets/app-preview-3x3-last-empty.svg" alt="XYZ Dashboard 3x3 preview with icons set and last slot empty" width="100%" />
+</p>
+
+
 
 ## Latest Local Build Notes
 
