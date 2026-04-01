@@ -37,11 +37,6 @@ Floating macro-pad launcher built with **Tauri + React + TypeScript** to run com
   <img src="./assets/app-preview-3x3-last-empty.svg" alt="XYZ Dashboard 3x3 preview with icons set and last slot empty" width="100%" />
 </p>
 
-### Themes Preview
-
-<p align="center">
-  <img src="./assets/themes-preview.svg" alt="Preview of Lime, Cyber, Aurora and Darkmoon themes" width="100%" />
-</p>
 
 ## Table of Contents
 
