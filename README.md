@@ -69,11 +69,11 @@ It is designed for users who want a compact, always-on-top launcher workflow.
 
 ## Features
 
-- Configurable button grid with per-page sizing.
+- Configurable button grid with paging by page size (rows/columns per page).
 - Global shortcut to show/hide the dashboard.
 - Command history shortcuts in tray menu.
-- Script/executable picker with command and icon suggestion.
-- Sound effects system with volume/output/test controls.
+- Script/executable picker with command suggestions and optional icon auto-suggestion from the executable path.
+- Howler-based sound effects; **Settings → Sounds** (volume, output channel, test) plus global shortcut open/close sounds.
 - Theme presets in Settings: **Lime**, **Cyber**, **Aurora**, **Darkmoon**.
 - Multicolor theme mode: combine multiple presets and rotate a slow animated gradient around app borders.
 - Settings UX refinements: fixed tabs + smooth internal scroll.
@@ -90,6 +90,30 @@ It is designed for users who want a compact, always-on-top launcher workflow.
   - built-in library (`lib:<id>`)
   - catalog refs (`pack:<pack-id>:<icon-id>`)
   - absolute file paths (resolved through Tauri file URL conversion)
+
+### Características (ES)
+
+- Rejilla de botones con paginación según tamaño de página (filas/columnas por página).
+- Atajo global para mostrar/ocultar el panel.
+- Historial de comandos desde el menú de bandeja.
+- Selector de script/ejecutable con sugerencias de comando e icono opcional inferido desde la ruta del ejecutable.
+- Sonido con Howler; **Ajustes → Sonidos** (volumen, salida de audio, prueba) y sonidos de abrir/cerrar con el atajo global.
+- Temas predefinidos en Ajustes: **Lime**, **Cyber**, **Aurora**, **Darkmoon**.
+- Modo multicolor: combina presets y anima un degradado lento en los bordes.
+- Ajustes de UX: pestañas fijas y scroll interno suave.
+- Transiciones de cierre y pestañas endurecidas para evitar artefactos fantasma.
+- Scroll interno fiable en pestañas de Ajustes (flex `min-h-0`).
+- Escalado visual uniforme: icono, etiqueta y espaciado crecen con el tamaño de la app.
+- Audio en GNOME (Linux): reproducción por capas con respaldos para Debian/WebKit.
+- Catálogo de icon packs:
+  - instalar/actualizar packs
+  - categorías en acordeón
+  - búsqueda
+  - orden por trending/descargas/novedades
+- Tres fuentes de icono:
+  - librería integrada (`lib:<id>`)
+  - catálogo (`pack:<pack-id>:<icon-id>`)
+  - rutas absolutas (resolución vía URL de archivo de Tauri)
 
 ## Latest Local Build Notes
 
@@ -108,6 +132,8 @@ It is designed for users who want a compact, always-on-top launcher workflow.
 
 ### Added
 
+- Boot splash wordmark (`public/splash-logo.svg`) and `runBootWithSplash` so the HTML splash is removed after config load.
+- Persisted `currentPage` in app config (with `gridSize` aligned to that page) so paging survives restarts without config drift.
 - Theme presets in Settings: **Lime**, **Cyber**, **Aurora**, **Darkmoon**.
 - **Multicolor** theme mode with multi-select preset blending.
 - Rotating conic-gradient border animation for multicolor mode.
@@ -124,6 +150,7 @@ It is designed for users who want a compact, always-on-top launcher workflow.
 
 ### Fixed
 
+- Page navigation now persists grid/page state consistently (`saveConfig` / `currentPage` in snapshot).
 - Settings panel ghost transition artifacts reduced by simplifying transition flow.
 - Internal Settings scrolling in tabs stabilized using proper flex/min-height constraints.
 - Audio playback reliability improved on GNOME Debian with layered fallbacks.
@@ -135,11 +162,11 @@ It is designed for users who want a compact, always-on-top launcher workflow.
 - Rust toolchain
 - OS dependencies required by Tauri for your platform
 
-Project versions:
+Project versions (keep [package.json](package.json) and [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json) in sync when you cut a release):
 
-- App version: `0.1.1`
-- Frontend package version: `0.1.1`
-- Tauri package version: `0.1.1`
+- App version: `0.1.2`
+- Frontend package version: `0.1.2`
+- Tauri package version: `0.1.2`
 
 ## Install and Run
 
@@ -168,7 +195,30 @@ cd src-tauri
 cargo check
 ```
 
+### Final verification (before tag / release)
+
+Run all checks locally:
+
+```bash
+pnpm run build
+pnpm run test
+cd src-tauri && cargo build
+```
+
+Smoke-test in the desktop app (`pnpm tauri dev`): boot splash appears then clears; paging restores the last page after restart; settings persist.
+
 ## Build and Releases
+
+Tagged releases use the version in `package.json` / `src-tauri/tauri.conf.json` (see [Requirements](#requirements)); push a `v*` tag to run `.github/workflows/release.yml`.
+
+### GitHub Actions
+
+| Workflow | Trigger | What it does |
+|----------|---------|----------------|
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Push / PR to `master` or `main` | `pnpm build`, `pnpm test`, and `cargo build` on Ubuntu (fast CI; **no** installers). |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push tag `v*` or manual dispatch | Full **Tauri** builds: Linux `.AppImage` + `.deb` + `.rpm`, macOS `.dmg`, Windows NSIS `.exe`; uploads to the GitHub **Release**. |
+
+Prefer **tagging** and letting `release.yml` produce official binaries instead of relying on local `pnpm tauri build` for distribution.
 
 ### Local app build
 
@@ -182,25 +232,26 @@ Release automation is configured in `.github/workflows/release.yml` and is trigg
 
 Official artifacts:
 
-- Linux: `.AppImage` and `.deb`
+- Linux: `.AppImage`, `.deb`, and `.rpm`
 - macOS: `.dmg`
 - Windows: `.exe` (NSIS)
 
 Create and push a tag:
 
 ```bash
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 ## Repository Layout
 
 ```text
 src/                     # React UI, state, hooks, audio, icon catalog
+public/                  # Static files for Vite (e.g. splash-logo.svg, app-icon.png)
 src-tauri/               # Rust backend (commands, shortcuts, window, packaging)
 assets/                  # Versioned visual assets + icon packs source
 assets/icon-packs/       # Catalog index + packs metadata + svg/png icons
-.github/workflows/       # CI/CD workflows (release)
+.github/workflows/       # ci.yml (checks) + release.yml (tagged installers)
 ```
 
 ## Icon Packs Catalog
@@ -219,8 +270,17 @@ assets/icon-packs/
 
 Core files:
 
-- `index.json`: global index and ranking metadata (`downloads`, `trendingScore`, `createdAt`, `iconCount`, etc.)
-- `pack.json`: per-pack icon list (`id`, `relativePath`, `tags`, `appHints`, etc.)
+- `index.json` (root fields):
+  - `version`: integer schema version for the index file (currently `1`).
+  - `updatedAt`: ISO 8601 UTC timestamp for the last catalog index refresh (bump when you change `index.json` or add/remove packs; distinct from per-pack `createdAt`). Helps track freshness across releases.
+  - `packs[]`: entries with `id`, `name`, `description`, `categories`, `tags`, `createdAt`, `downloads`, `trendingScore`, `iconCount`, `coverIcon`, etc.
+- `pack.json`: per-pack icon list (`id`, `relativePath`, `tags`, `appHints`, `category`, etc.)
+
+### Adding or updating a pack
+
+1. Create or edit `assets/icon-packs/packs/<pack-id>/` with `pack.json` and files under `icons/`.
+2. Register the pack in `assets/icon-packs/index.json` (or update metrics).
+3. Set `updatedAt` to the current UTC time. Increment `version` only if you change the shape or semantics of the index JSON (not for routine pack additions).
 
 Usage flow in app:
 
@@ -261,10 +321,10 @@ Preview row:
 
 1. Create a branch from your local clone.
 2. Keep changes scoped and small when possible.
-3. Run checks before opening a PR:
-   - `pnpm build`
-   - `pnpm test`
-   - `cd src-tauri && cargo check`
+3. Run checks before opening a PR (same as [Final verification](#final-verification-before-tag--release)):
+   - `pnpm run build`
+   - `pnpm run test`
+   - `cd src-tauri && cargo build` (or `cargo check` for a faster compile-only pass)
 4. In the PR description, include:
    - problem statement
    - implemented solution

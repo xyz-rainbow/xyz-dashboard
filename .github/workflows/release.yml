@@ -19,8 +19,8 @@ jobs:
             args: "--bundles dmg"
             artifact_note: "Official macOS artifact: .dmg"
           - platform: "ubuntu-22.04"
-            args: "--bundles appimage,deb"
-            artifact_note: "Official Linux artifacts: .AppImage + .deb"
+            args: "--bundles appimage,deb,rpm"
+            artifact_note: "Official Linux artifacts: .AppImage + .deb + .rpm"
           - platform: "windows-latest"
             args: "--bundles nsis"
             artifact_note: "Official Windows artifact: .exe (NSIS)"
@@ -49,7 +49,8 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            rpm
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -73,7 +74,7 @@ jobs:
             - **UX**: grid paging per page sizes, smoother window drag, settings panel fixes, icon auto-detect for executables with optional overwrite.
 
             ### Artifacts (this workflow matrix)
-            - Linux: `.AppImage`, `.deb`
+            - Linux: `.AppImage`, `.deb`, `.rpm`
             - macOS: `.dmg`
             - Windows: `.exe` (NSIS)
 

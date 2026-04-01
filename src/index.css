@@ -25,7 +25,7 @@ html, body, #root {
   -webkit-user-select: none;
 }
 
-/* Initial boot screen (Rainbow Technology) — removed from DOM after app config loads */
+/* Initial boot screen (Rainbow Technology wordmark SVG) — removed from DOM after app config loads */
 .boot-splash {
   position: fixed;
   inset: 0;
@@ -46,7 +46,7 @@ html, body, #root {
 }
 
 .boot-splash__logo {
-  max-width: min(88vw, 440px);
+  max-width: min(94vw, 960px);
   width: 100%;
   height: auto;
   object-fit: contain;

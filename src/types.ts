@@ -14,6 +14,8 @@ export interface AppConfig {
   language: AppLanguage;
   gridSize: GridSize;
   pageGridSizes: GridSize[];
+  /** Active macro page index (0-based). Persisted with gridSize for the same page. */
+  currentPage: number;
   buttons: ButtonConfig[];
   settingsIconCorner: Corner;
   shortcutKey: string;
@@ -46,6 +48,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   language: 'en',
   gridSize: [2, 2],
   pageGridSizes: [[2, 2]],
+  currentPage: 0,
   buttons: Array.from({ length: 4 }, (_, i) => ({
     id: `btn-${i}`,
     label: '',

@@ -110,11 +110,20 @@ async function persistConfig(config: AppConfig): Promise<void> {
   }
 }
 
+function clampPageIndex(page: number, pageCount: number): number {
+  const n = Math.max(1, pageCount);
+  return Math.min(n - 1, Math.max(0, Math.floor(page)));
+}
+
 function getConfigSnapshot(state: AppStore): AppConfig {
+  const sizes = state.pageGridSizes;
+  const page = clampPageIndex(state.currentPage, sizes.length);
+  const gridSizeForPage = sizes[page] ?? state.gridSize;
   return {
     language: state.language,
-    gridSize: state.gridSize,
+    gridSize: gridSizeForPage,
     pageGridSizes: state.pageGridSizes,
+    currentPage: page,
     buttons: state.buttons,
     settingsIconCorner: state.settingsIconCorner,
     shortcutKey: state.shortcutKey,
@@ -158,7 +167,6 @@ interface AppStore extends AppConfig {
   settingsOpen: boolean;
   editingButton: string | null;
   error: string | null;
-  currentPage: number;
 
   // Acciones
   setLanguage: (lang: AppLanguage) => void;
@@ -199,7 +207,6 @@ export const useStore = create<AppStore>()((set, get) => ({
   settingsOpen: false,
   editingButton: null,
   error: null,
-  currentPage: 0,
 
   setLanguage: (lang) => {
     set({ language: lang });
@@ -254,6 +261,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           currentPage: prevPage,
           gridSize: prevSize,
         });
+        get().saveConfig();
         return;
       }
     }
@@ -392,6 +400,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     const next = Math.min(totalPages - 1, Math.max(0, page));
     const size = pageGridSizes[next] ?? get().gridSize;
     set({ currentPage: next, gridSize: size });
+    get().saveConfig();
   },
   nextPage: () => {
     const { currentPage, setCurrentPage } = get();
@@ -467,10 +476,20 @@ export const useStore = create<AppStore>()((set, get) => ({
         (acc, size) => acc + pageCapacity(size),
         0
       );
+      const pages = normalizedPageGridSizes;
+      const savedRaw = config.currentPage;
+      const savedPage =
+        typeof savedRaw === 'number' && Number.isFinite(savedRaw)
+          ? clampPageIndex(savedRaw, pages.length)
+          : 0;
+      const gridSizeForPage =
+        pages[savedPage] ?? pages[0] ?? DEFAULT_CONFIG.gridSize;
+
       const resolvedConfig: AppConfig = {
         language: config.language ?? DEFAULT_CONFIG.language,
-        gridSize: normalizedPageGridSizes[0] ?? DEFAULT_CONFIG.gridSize,
+        gridSize: gridSizeForPage,
         pageGridSizes: normalizedPageGridSizes,
+        currentPage: savedPage,
         buttons: normalizeButtons(
           config.buttons ?? DEFAULT_CONFIG.buttons,
           totalCapacity
@@ -498,10 +517,7 @@ export const useStore = create<AppStore>()((set, get) => ({
             ? config.multicolorThemes
             : DEFAULT_CONFIG.multicolorThemes) as BaseThemePreset[],
       };
-      set({
-        ...resolvedConfig,
-        currentPage: 0,
-      });
+      set(resolvedConfig);
       void i18n.changeLanguage(resolvedConfig.language);
       void invoke('apply_window_scale', {
         percent: resolvedConfig.windowScalePercent,
