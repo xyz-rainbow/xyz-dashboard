@@ -1,11 +1,6 @@
 # XYZ Dashboard
 
 <p align="center">
-  <img src="./assets/banner-main.svg" alt="XYZ Dashboard main banner" width="100%" />
-</p>
-
-
-<p align="center">
   <a href="https://tauri.app/">
     <img alt="Tauri" src="https://img.shields.io/badge/Tauri-Desktop-blue?logo=tauri&logoColor=white">
   </a>
@@ -18,6 +13,10 @@
   <a href="https://pnpm.io/">
     <img alt="pnpm" src="https://img.shields.io/badge/pnpm-Package%20Manager-f69220?logo=pnpm&logoColor=white">
   </a>
+</p>
+
+<p align="center">
+  <img src="./assets/banner-main.svg" alt="XYZ Dashboard main banner" width="100%" />
 </p>
 
 Floating macro-pad launcher built with **Tauri + React + TypeScript** to run commands and open URLs quickly.
